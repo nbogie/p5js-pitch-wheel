@@ -6,6 +6,10 @@ var snapshots;
 var flashMsgs;
 var currentUserNameM;
 var showHelpText;
+var gridWithOtherOscs;
+
+var lowestFreq = 30;
+var highestFreq = 3000;
 
 var messagesRef = null;
 
@@ -30,14 +34,21 @@ function OscPlus(f, a, x, y){
   this.getRealFreq = function(){
     return this.osc.freq().value;
   };
-  this.draw = function(){
+  this.draw = function(withGrid, withNumbers){
     push();
     fill(this.color);
-    circSize = map(this.getAmp(), 0, 1, 4, 36);
+    circSize = map(this.getAmp(), 0, 1, 14, 50);
+    push();
     noStroke();
     ellipse(this.x, this.y, circSize, circSize);
     fill(0);
     text(""+round(this.getRealFreq()), this.x+10, this.y-10);
+    pop();
+    
+    if(withGrid){
+      drawGridFor(this, withNumbers);
+    }
+
     pop();
   };
   
@@ -107,6 +118,8 @@ function setup() {
   colors = makePalette();
   oscPluses = [];
   oscPlusFloating = null;
+  gridWithOtherOscs = false;
+
   setupFirebase();
   loadSnapshotsFromDB();
 }
@@ -248,6 +261,7 @@ function drawHelpText(x,y){
            "'s' - Snapshot the current config (to local and cloud)",
            "'r' - Restore a random config",
            "'d' - load all snapshots from cloud (ready to be restored).",
+           "'g' - Toggle grid on and off (floating osc always uses grid)",
            "'q' - Quieten fades(or raises) all osc amps to some low value.",
            "'h' - Show/Hide this help info",
            "SPACE - clear current config",
@@ -262,10 +276,19 @@ function drawHelpText(x,y){
 function draw() {
   background(bgColor);
   drawSquares();
-  drawDebugText(150,height - 150);
-  if (showHelpText){ drawHelpText(400,height - 150); } 
-  drawOscPluses();
-  drawFloatingOscPlus();
+
+  
+  gridWithFloatingOsc = true;
+  numbersWithFloatingOsc = gridWithFloatingOsc;
+
+  drawOscPluses(gridWithOtherOscs, false);
+  drawFloatingOscPlus(gridWithFloatingOsc, numbersWithFloatingOsc);
+
+  if (showHelpText){ 
+    drawHelpText(400,height - 200); 
+    drawDebugText(150,height - 150); 
+  } 
+
   drawAndCullFlashMessages(width/2, height/2);
 }
 
@@ -288,9 +311,8 @@ function drawAndCullFlashMessages(x, y){
   pop();
 }
 
-function drawOscPluses(){
-
-  oscPluses.forEach(function(op){ op.draw()});
+function drawOscPluses(withGrid, withNumbers){
+  oscPluses.forEach(function(op){ op.draw(withGrid, withNumbers)});
 }
 
 function freqToScreenX(f){
@@ -298,7 +320,7 @@ function freqToScreenX(f){
   return map(f, lowestFreq, highestFreq, 0, width);
 }
 
-function drawFloatingOscPlus(){
+function drawFloatingOscPlus(withGrid, withNumbers){
 
   if (oscPlusFloating != null){
     push();
@@ -307,13 +329,21 @@ function drawFloatingOscPlus(){
     line(0, oscPlusFloating.y, width, oscPlusFloating.y);
     line(oscPlusFloating.x, 0, oscPlusFloating.x, height);
 
-    f = oscPlusFloating.getRealFreq();
-    series = oscPlusFloating.cachedHarmSeq;
+    pop();
+    oscPlusFloating.draw(withGrid, withNumbers);
+
+  }
+}
+
+function drawGridFor(osc, withNumbers){
+    f = osc.getRealFreq();
+    series = osc.cachedHarmSeq;
     series = series.map(function(elem){ 
       elem.r = round(elem.r); 
       elem.x = freqToScreenX(elem.f);
-      return elem; });
-    //text(JSON.stringify(series), oscPlusFloating.x, oscPlusFloating.y);
+      return elem; 
+    });
+
     function fToText(fr){
       fr = round(fr);
       if (fr < 100){
@@ -323,18 +353,29 @@ function drawFloatingOscPlus(){
       }  
        
     }
+    //console.log(series.length);
+    //stroke(0.5, 0);
+    //stroke("0xAAB0B0B0");
+    push();
+    fill(0);
+    stroke(0);
     series.forEach(function(elem, i) { 
+      //strokeWeight(1);
       line(elem.x, 0, elem.x, height);
-      text(elem.desc, elem.x+5, constrain(oscPlusFloating.y-(i*10), 15, height - 30));
-      text(fToText(elem.f), elem.x+5, constrain(oscPlusFloating.y+20+(i*10), 30, height - 15));
     });
-
     pop();
-    oscPlusFloating.draw();
 
-  }
+    push();
+    noStroke()
+    fill(0);
+    series.forEach(function(elem, i) { 
+      if (withNumbers){
+        text(elem.desc, elem.x+5, constrain(osc.y-(i*10), 15, height - 30));
+        text(fToText(elem.f), elem.x+5, constrain(osc.y+20+(i*10), 30, height - 15));
+      }
+    });
+    pop();
 }
-
 function keyPressed() {
   if (keyCode === 32) {
     shutUp();
@@ -355,6 +396,10 @@ function keyTyped(){
   if (key==='h'){
     showHelpText = !showHelpText;
   }
+  if (key==='g'){
+      gridWithOtherOscs = !gridWithOtherOscs;
+  }
+
   if (key==='q'){
     quieten();
   }
@@ -372,9 +417,6 @@ function keyTyped(){
     flashMessage("restored a snapshot");
   }
 }
-var lowestFreq = 30;
-var highestFreq = 3000;
-
 function xValToFreq(x){
   //TODO: constrain. 
   //TODO: linear / exp?
