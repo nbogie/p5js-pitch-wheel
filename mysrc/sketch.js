@@ -80,6 +80,9 @@ function shutUp(){
    oscPlusFloating = null;
   }
 }
+function quieten(){
+  oscPluses.forEach(function(op){ op.amp(0.2, 2)});
+}
 
 function choose(list){
   var index = floor(random(list.length));
@@ -147,6 +150,11 @@ function drawFloatingOscPlus(){
 function keyPressed() {
   if (keyCode === 32) {
     shutUp();
+  }
+}
+function keyTyped(){
+  if (key==='q'){
+    quieten();
   }
 }
 
