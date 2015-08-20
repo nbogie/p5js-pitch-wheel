@@ -6,20 +6,24 @@ var oscPlusFloating;
 
 function OscPlus(f, a, x, y){
   this.osc = makeOsc(f,a);
-  this.freqCache = f;
-  this.ampCache = a;
   this.x = x;
   this.y = y;
   this.color = choose(colors);
-  
+  //NOTE: this is into the web audio api and amp may not have a simple value, as it might itself be (for example) an oscillator.
+  this.getAmp = function(){
+    return this.osc.amp().value;
+  };
+  this.getFreq = function(){
+    return this.osc.freq().value;
+  };
   this.draw = function(){
     push();
     fill(this.color);
-    circSize = map(this.ampCache, 0, 1, 4, 36);
+    circSize = map(this.getAmp(), 0, 1, 4, 36);
     noStroke();
     ellipse(this.x, this.y, circSize, circSize);
     fill(0);
-    text(""+round(this.freqCache), this.x+10, this.y-10);
+    text(""+round(this.getFreq()), this.x+10, this.y-10);
     pop();
   };
   
@@ -29,11 +33,9 @@ function OscPlus(f, a, x, y){
   }
 
   this.freq = function(f, time){
-    this.freqCache = f;
     this.osc.freq(f, time);
   }
   this.amp = function(a, time){
-    this.ampCache = a;
     this.osc.amp(a, time);
   }
   this.killOscSoftly = function(){

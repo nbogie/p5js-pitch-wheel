@@ -12,3 +12,7 @@ TODO
        ops.forEach(function(op){ op.killOscSoftly(); } );
 
 * allow drag of an existing placed pitch.
+
+* add a snap() fn to tune all the higher freq notes to some accepted ratio of the lowest note's freq (perhaps).
+
+* allow the note-balls to fall and bounce, acted upon by gravity and collisions, their params changing as that happens.  (perhaps use the play.j5 library for that).
