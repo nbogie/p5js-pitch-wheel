@@ -2,6 +2,8 @@ var colors;
 var bgColor;
 var oscPluses;
 var oscPlusFloating;
+var snapshots;
+var flashMsgs;
 
 
 function OscPlus(f, a, x, y){
@@ -61,6 +63,8 @@ function makePalette(){
 
 }
 function setup() {
+  snapshots = [];
+  flashMsgs = [];
   // uncomment this line to make the canvas the full size of the window
   createCanvas(windowWidth, windowHeight-100);
   bgColor = color(100);
@@ -83,7 +87,27 @@ function shutUp(){
   }
 }
 function quieten(){
+  //TODO: quieten should also affect the y value.  Consider moving the y first and just applying mapping of y to amp as normal on any pos change.
   oscPluses.forEach(function(op){ op.amp(0.2, 2)});
+}
+
+function takeSnapshot(){
+  snapshot = oscPluses.map(function(op) { return { f: op.getFreq(), a: op.getAmp(), x: op.x, y: op.y}; });
+  snapshots.push(snapshot);
+  console.log("saved: " + snapshot);
+}
+
+function restoreSnapshot(){
+  snapshot = choose(snapshots);
+  console.log("restoring " + snapshot);
+  if (snapshot != null){
+    shutUp();
+
+    snapshot.forEach(function(item){ 
+      op = new OscPlus(item.f, item.a, item.x, item.y);
+      oscPluses.push(op);
+    });
+  }
 }
 
 function choose(list){
@@ -99,18 +123,18 @@ function drawSquares(){
   });
 }
 
-function drawTexts(lines)
+function drawTexts(lines, x, y)
 {
   push();
   fill(0);
   noStroke()
   lines.forEach(function(line, i){
-    text(line, width/2, height/2 + 20*i);
+    text(line, x, y + 20*i);
   });
   pop();
 } 
 
-function drawDebugText(){
+function drawDebugText(x, y){
   var touchesLines = touches.map(function(p, i){
     return 'touches[' + i + '] = ' + p.x + ', ' + p.y;
   });
@@ -119,21 +143,41 @@ function drawDebugText(){
            'mouse: ' + mouseX + ', ' + mouseY, 
            'single-touch: ' + touchX + ', ' + touchY];
 
-  drawTexts(lines.concat(touchesLines));  
+  drawTexts(lines.concat(touchesLines), x, y);
 }
 
 function draw() {
   background(bgColor);
   drawSquares();
-  drawDebugText();
+  drawDebugText(150,height - 150);
   drawOscPluses();
   drawFloatingOscPlus();
+  drawAndCullFlashMessages(width/2, height/2);
+}
+
+function cullFlashMessages(){
+  if (flashMsgs.length<1){
+    return;
+  }
+  timeNow = millis();
+  keep = flashMsgs.filter(function(fm){ 
+    console.log(fm.until > timeNow);
+    return (fm.until > timeNow); });
+  console.log(keep);
+  flashMsgs = keep;
+}
+  
+function drawAndCullFlashMessages(x, y){
+  cullFlashMessages();
+  msgs = flashMsgs.map(function(item){ return item.msg; });
+  drawTexts(msgs, x, y);
 }
 
 function drawOscPluses(){
 
   oscPluses.forEach(function(op){ op.draw()});
 }
+
 function drawFloatingOscPlus(){
 
   if (oscPlusFloating != null){
@@ -154,9 +198,23 @@ function keyPressed() {
     shutUp();
   }
 }
+
+function flashMessage(str, durMs){
+  until = millis() + durMs;
+  flashMsgs.push({msg: str, until: until});
+}
+
 function keyTyped(){
   if (key==='q'){
     quieten();
+  }
+  if (key==='s'){
+    takeSnapshot();
+    flashMessage("Saved Snapshot - 'r' to restore.", 2000);
+    shutUp();
+  }
+  if (key==='r'){
+    restoreSnapshot();    
   }
 }
 
