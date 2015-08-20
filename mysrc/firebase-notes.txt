@@ -1,0 +1,8 @@
+Object.keys(allData).map(function(k){ return allData[k].type; })
+//[undefined, undefined, "snapshot"]
+
+//find the snapshots
+Object.keys(allData).filter(function(k){ return "snapshot" === allData[k].type; })
+
+//get the snapshots
+snapKeys.map(function(k){ return allData[k]; })
