@@ -1,0 +1,7 @@
+todo.txt
+
+* Test on iOS and android phones and tablets - in particular, test out: 
+  * touch stuff: "touchStarted(), touchMoved(), touchX, touchY, etc
+  * sound
+  * networking (firebase)
+  * device orientation and acceleration
