@@ -4,18 +4,27 @@ var oscPluses;
 var oscPlusFloating;
 var snapshots;
 var flashMsgs;
+var currentUserNameM;
 
+var messagesRef = null;
 
 function OscPlus(f, a, x, y){
+  this.ampCached = a;
   this.osc = makeOsc(f,a);
   this.x = x;
   this.y = y;
   this.color = choose(colors);
-  //NOTE: this is into the web audio api and amp may not have a simple value, as it might itself be (for example) an oscillator.
+  
   this.getAmp = function(){
+    return this.ampCached;
+  };
+
+  //NOTE: this is into the web audio api and amp may not have a simple value, as it might itself be (for example) an oscillator.
+  //Doesn't work if amp has been assigned an env(will eval to 0).
+  this.getRealAmp = function(){
     return this.osc.amp().value;
   };
-  this.getFreq = function(){
+  this.getRealFreq = function(){
     return this.osc.freq().value;
   };
   this.draw = function(){
@@ -25,7 +34,7 @@ function OscPlus(f, a, x, y){
     noStroke();
     ellipse(this.x, this.y, circSize, circSize);
     fill(0);
-    text(""+round(this.getFreq()), this.x+10, this.y-10);
+    text(""+round(this.getRealFreq()), this.x+10, this.y-10);
     pop();
   };
   
@@ -38,30 +47,51 @@ function OscPlus(f, a, x, y){
     this.osc.freq(f, time);
   }
   this.amp = function(a, time){
+    this.ampCached = a;
     this.osc.amp(a, time);
   }
   this.killOscSoftly = function(){
-    this.osc.amp(0,0.01);
-    this.osc.stop(0.02);
+    this.osc.amp(0, 0.1);
+    this.osc.stop(0.15);
+    this.osc = null;
   };
+}
+
+function makeEnv(){
+  var aT = 0.05; // attack time in seconds
+  var aL = 0.8; // attack level 0.0 to 1.0
+  var dT = 0.3; // decay time in seconds
+  var dL = 0.7; // decay level  0.0 to 1.0
+  var sT = 0.2; // sustain time in seconds
+  var sL = dL; // sustain level  0.0 to 1.0
+  var rT = 999; // release time in seconds
+  // release level defaults to zero
+  return new p5.Env(aT, aL, dT, dL, sT, sL, rT);
 }
 
 function makeOsc(f, a){
   osc = new p5.Oscillator();
   osc.setType('sine');
   osc.freq(f);
-  osc.amp(a, 0.05);
+  //a simple env to fade in to the given target amplitude.
+  //really we just want to avoid clicking.
+  var env = new p5.Env(2, a, 10)//  makeEnv();
+  osc.amp(env);
   osc.start();
+  env.play();
+  //NOTE: you can't do this - some time must pass or the previous osc.amp(0) setting will be forgotten and a starting vol of 0.5 will cause a click.
+  //osc.amp(a, 3.0, 1);
   return osc;
 }
+
 function makePalette(){
   return [
         color( 241, 103, 69), 
         color( 255, 198, 93), 
         color( 123, 200, 164), 
         color( 76, 195, 217)]; 
-
 }
+
 function setup() {
   snapshots = [];
   flashMsgs = [];
@@ -72,11 +102,44 @@ function setup() {
   //makeOsc(440,0.2);  
   colors = makePalette();
   oscPluses = [];
-  //oscPlusFloating = new OscPlus(440,0.3, 100,100);
+  oscPlusFloating = null;
+  setupFirebase();
+  loadSnapshotsFromDB();
 }
-function shutUp(){
-  console.log("Shutting up.");
-  
+
+function setupFirebase(){
+  messagesRef = new Firebase('https://t4458o4c8k9.firebaseio-demo.com/');
+
+  function handleNewMessage(snapshot) {
+    var data = snapshot.val();
+    console.log("new message added to firebase...");
+    flashMessage("new entry in db");
+    console.log(data)
+  }
+
+  // Add a callback that is triggered for each chat message.
+  //not currently doing anything meaningful
+  messagesRef.limitToLast(10).on('child_added', handleNewMessage);
+}
+
+function loadSnapshotsFromDB(){
+    messagesRef.once("value", function(everything){
+      var allData = everything.val();
+      console.log(allData);
+      //Object.keys(allData).map(function(k){ return allData[k].type; })
+      // yields: [undefined, undefined, "snapshot"]
+      if (allData != null){        
+        var snapKeys = Object.keys(allData).filter(function(k){ return "snapshot" === allData[k].type; })
+        snapshots = snapKeys.map(function(k){ return allData[k]; })
+      } else {
+        snapshots = []
+      }
+  }, function(er){ 
+    console.log("Error retrieving snapshots: "+ er.code)
+  });
+}
+
+function shutUp(){  
   //TODO: possibly osc will have been freed when p5 tries to adjust amp subsequent times.
   //      Find out correct way to dispose of a playing amp without hard amp drop.
   oscPluses.forEach(function(op){ op.killOscSoftly(); } );
@@ -88,29 +151,56 @@ function shutUp(){
 }
 function quieten(){
   //TODO: quieten should also affect the y value.  Consider moving the y first and just applying mapping of y to amp as normal on any pos change.
-  oscPluses.forEach(function(op){ op.amp(0.2, 2)});
+  //TODO: this may increase the vol of those quieter than stated here.
+  oscPluses.forEach(function(op){ op.amp(0.1, 1)});
 }
 
-function takeSnapshot(){
-  snapshot = oscPluses.map(function(op) { return { f: op.getFreq(), a: op.getAmp(), x: op.x, y: op.y}; });
-  snapshots.push(snapshot);
-  console.log("saved: " + snapshot);
-}
-
-function restoreSnapshot(){
-  snapshot = choose(snapshots);
-  console.log("restoring " + snapshot);
-  if (snapshot != null){
-    shutUp();
-
-    snapshot.forEach(function(item){ 
-      op = new OscPlus(item.f, item.a, item.x, item.y);
-      oscPluses.push(op);
-    });
+function getCurrentUserNameOrDefault(){
+  if (currentUserNameM === undefined || currentUserNameM === null){ 
+    return "anonymous";
+  } else {
+    return currentUserNameM; 
   }
 }
 
+function wipeDB(){
+     messagesRef.set(null); 
+}
+
+function takeSnapshot(){
+  snapshot = 
+  { type: "snapshot", 
+    owner: getCurrentUserNameOrDefault(),
+    title: "untitled",
+    time: new Date().getTime(),
+    oscPluses: oscPluses.map(function(op) { return { f: op.getRealFreq(), a: op.getAmp(), x: op.x, y: op.y}; })
+  };
+  snapshots.push(snapshot);  
+  if (messagesRef!=null){
+    messagesRef.push(snapshot);
+  }
+}
+
+function restoreSnapshot(){
+  if (snapshots === undefined || snapshots === null){
+    console.log("snapshots undefined or null!");
+  }else {
+    snapshot = choose(snapshots);
+    if (snapshot != null){
+      shutUp();
+      snapshot.oscPluses.forEach(function(item){ 
+        op = new OscPlus(item.f, item.a, item.x, item.y);
+        oscPluses.push(op);
+      });
+    }
+  }
+
+}
+
 function choose(list){
+  if (list.length === 0){
+    return null;
+  }
   var index = floor(random(list.length));
   return list[index];
 }
@@ -161,9 +251,7 @@ function cullFlashMessages(){
   }
   timeNow = millis();
   keep = flashMsgs.filter(function(fm){ 
-    console.log(fm.until > timeNow);
     return (fm.until > timeNow); });
-  console.log(keep);
   flashMsgs = keep;
 }
   
@@ -192,7 +280,6 @@ function drawFloatingOscPlus(){
   }
 }
 
-
 function keyPressed() {
   if (keyCode === 32) {
     shutUp();
@@ -200,11 +287,16 @@ function keyPressed() {
 }
 
 function flashMessage(str, durMs){
+  durMs = durMs || 1000;
   until = millis() + durMs;
   flashMsgs.push({msg: str, until: until});
 }
 
 function keyTyped(){
+  if (key==='d'){
+    loadSnapshotsFromDB();
+    flashMessage("got snapshots from db");
+  }
   if (key==='q'){
     quieten();
   }
@@ -213,8 +305,13 @@ function keyTyped(){
     flashMessage("Saved Snapshot - 'r' to restore.", 2000);
     shutUp();
   }
+  if (key==='W'){
+    //wipeDB();
+    //flashMessage("DB Wiped.  Seriously.", 2000);
+  }
   if (key==='r'){
     restoreSnapshot();    
+    flashMessage("restored a snapshot");
   }
 }
 
@@ -233,9 +330,11 @@ function touchMoved(){
   mouseOrTouchDragged(touchX, touchY);
   return false;
 }
+
 function mouseDragged(){
   mouseOrTouchDragged(mouseX, mouseY);
 }
+
 function mouseOrTouchDragged(x, y){
   console.log("touch moved");
   if (oscPlusFloating!=null){  
