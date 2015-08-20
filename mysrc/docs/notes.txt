@@ -21,4 +21,5 @@ Solution: Use constrain() with it.
 
 * For INTERACTIVITY, sprites, animation, consider p5.play: http://p5play.molleindustria.org/examples/index.html?fileName=collisions2.js
 
-* dump json with JSON.stringify(myObj)
+* dump json with JSON.stringify(myObj).  Use this in the debugger instead of implementing toString() for each class.
+
