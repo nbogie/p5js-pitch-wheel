@@ -1,4 +1,5 @@
-todo.txt
+TODO
+====
 
 * Test on iOS and android phones and tablets - in particular, test out: 
   * touch stuff: "touchStarted(), touchMoved(), touchX, touchY, etc
@@ -9,3 +10,5 @@ todo.txt
 * TODO: find how to refer to a fn in another prototype?  
   e.g. ops.forEach(killOscSoftly); rather than saying
        ops.forEach(function(op){ op.killOscSoftly(); } );
+
+* allow drag of an existing placed pitch.
