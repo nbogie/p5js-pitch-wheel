@@ -15,7 +15,9 @@ function OscPlus(f, a, x, y){
   this.x = x;
   this.y = y;
   this.color = choose(colors);
-  
+  this.cachedHarmSeq = harmsAndSubHarms(f);
+;
+
   this.getAmp = function(){
     return this.ampCached;
   };
@@ -46,6 +48,8 @@ function OscPlus(f, a, x, y){
 
   this.freq = function(f, time){
     this.osc.freq(f, time);
+    //TODO: optimise?
+    this.cachedHarmSeq = harmsAndSubHarms(f);
   }
   this.amp = function(a, time){
     this.ampCached = a;
@@ -304,15 +308,25 @@ function drawFloatingOscPlus(){
     line(oscPlusFloating.x, 0, oscPlusFloating.x, height);
 
     f = oscPlusFloating.getRealFreq();
-    series = harmsAndSubHarms(f);
+    series = oscPlusFloating.cachedHarmSeq;
     series = series.map(function(elem){ 
       elem.r = round(elem.f); 
       elem.x = freqToScreenX(elem.f);
       return elem; });
     //text(JSON.stringify(series), oscPlusFloating.x, oscPlusFloating.y);
-    series.forEach(function(elem) { 
+    function fToText(fr){
+      fr = round(fr);
+      if (fr < 100){
+        return ""+fr;
+      } else {
+       return fr + "Hz" 
+      }  
+       
+    }
+    series.forEach(function(elem, i) { 
       line(elem.x, 0, elem.x, height);
-      text(elem.desc, elem.x+5, oscPlusFloating.y);
+      text(elem.desc, elem.x+5, oscPlusFloating.y-(i*10));
+      text(fToText(elem.f), elem.x+5, oscPlusFloating.y+20+(i*10));
     });
 
     pop();
