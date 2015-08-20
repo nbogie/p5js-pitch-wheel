@@ -5,6 +5,7 @@ var oscPlusFloating;
 var snapshots;
 var flashMsgs;
 var currentUserNameM;
+var showHelpText;
 
 var messagesRef = null;
 
@@ -72,7 +73,7 @@ function makeEnv(){
 function makeOsc(f, a){
   osc = new p5.Oscillator();
   osc.setType('sine');
-  osc.freq(f);
+  osc.freq(f, 0.05);
   //a simple env to fade in to the given target amplitude.
   //really we just want to avoid clicking.
   var env = new p5.Env(2, a, 10)//  makeEnv();
@@ -97,9 +98,8 @@ function setup() {
   flashMsgs = [];
   // uncomment this line to make the canvas the full size of the window
   createCanvas(windowWidth, windowHeight-100);
+  showHelpText = true;
   bgColor = color(100);
-  textAlign(CENTER);
-  //makeOsc(440,0.2);  
   colors = makePalette();
   oscPluses = [];
   oscPlusFloating = null;
@@ -121,6 +121,7 @@ function setupFirebase(){
   //not currently doing anything meaningful
   messagesRef.limitToLast(10).on('child_added', handleNewMessage);
 }
+
 
 function loadSnapshotsFromDB(){
     messagesRef.once("value", function(everything){
@@ -148,6 +149,7 @@ function shutUp(){
     oscPlusFloating.killOscSoftly();
    oscPlusFloating = null;
   }
+  bgColor = choose(colors);
 }
 function quieten(){
   //TODO: quieten should also affect the y value.  Consider moving the y first and just applying mapping of y to amp as normal on any pos change.
@@ -236,10 +238,28 @@ function drawDebugText(x, y){
   drawTexts(lines.concat(touchesLines), x, y);
 }
 
+function drawHelpText(x,y){  
+  var lines = [
+           "SPACE - clear current config",
+           "'s' - Snapshot the current config (to local and cloud)",
+           "'r' - Restore a random config",
+           "'d' - load all snapshots from cloud (ready to be restored).",
+           "'q' - Quieten fades(or raises) all osc amps to some low value.",
+           "'h' - Show/Hide this help info",
+           "SPACE - clear current config",
+           ""
+           ];
+  push();
+  textAlign(LEFT);
+  drawTexts(lines, x, y);
+  pop();
+
+}
 function draw() {
   background(bgColor);
   drawSquares();
   drawDebugText(150,height - 150);
+  if (showHelpText){ drawHelpText(400,height - 150); } 
   drawOscPluses();
   drawFloatingOscPlus();
   drawAndCullFlashMessages(width/2, height/2);
@@ -257,13 +277,21 @@ function cullFlashMessages(){
   
 function drawAndCullFlashMessages(x, y){
   cullFlashMessages();
+  push();
+  textAlign(CENTER);
   msgs = flashMsgs.map(function(item){ return item.msg; });
   drawTexts(msgs, x, y);
+  pop();
 }
 
 function drawOscPluses(){
 
   oscPluses.forEach(function(op){ op.draw()});
+}
+
+function freqToScreenX(f){
+  //TODO: link this with its reciprocal fn's impl
+  return map(f, lowestFreq, highestFreq, 0, width);
 }
 
 function drawFloatingOscPlus(){
@@ -274,6 +302,19 @@ function drawFloatingOscPlus(){
     stroke(0);
     line(0, oscPlusFloating.y, width, oscPlusFloating.y);
     line(oscPlusFloating.x, 0, oscPlusFloating.x, height);
+
+    f = oscPlusFloating.getRealFreq();
+    series = harmsAndSubHarms(f);
+    series = series.map(function(elem){ 
+      elem.r = round(elem.f); 
+      elem.x = freqToScreenX(elem.f);
+      return elem; });
+    //text(JSON.stringify(series), oscPlusFloating.x, oscPlusFloating.y);
+    series.forEach(function(elem) { 
+      line(elem.x, 0, elem.x, height);
+      text(elem.desc, elem.x+5, oscPlusFloating.y);
+    });
+
     pop();
     oscPlusFloating.draw();
 
@@ -297,6 +338,9 @@ function keyTyped(){
     loadSnapshotsFromDB();
     flashMessage("got snapshots from db");
   }
+  if (key==='h'){
+    showHelpText = !showHelpText;
+  }
   if (key==='q'){
     quieten();
   }
@@ -314,11 +358,13 @@ function keyTyped(){
     flashMessage("restored a snapshot");
   }
 }
+var lowestFreq = 30;
+var highestFreq = 3000;
 
 function xValToFreq(x){
   //TODO: constrain. 
   //TODO: linear / exp?
-  return map(x, 0, width, 30, 1500);
+  return map(x, 0, width, lowestFreq, highestFreq);
 }
 
 function yValToAmp(y){
@@ -333,6 +379,14 @@ function touchMoved(){
 
 function mouseDragged(){
   mouseOrTouchDragged(mouseX, mouseY);
+}
+
+function harmsAndSubHarms(baseF){
+  ratioStrs = ["1/6", "1/5", "1/4", "1/3", "1/2", "1", "2", "3", "4", "5", "6"]
+  return ratioStrs.map(function(r){ 
+    return { r: eval(r), 
+             f: eval(r) * baseF, 
+             desc: r }; });
 }
 
 function mouseOrTouchDragged(x, y){
