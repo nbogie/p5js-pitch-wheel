@@ -24,3 +24,6 @@ TODO
 * consider using own pool of oscs if they don't behave on initial creation / culling.
 
 * make it work offline again. (no dependencies on firebase or CDNs for the jquery and firebase js, etc)
+
+* x,y values restored from a snapshot are specific to the window dimensions under which they were snapshotted, and do not reflect how high or low a pitch really is.  If the window had height 100, a bass note might be y: 90, but this is very high up when restored on an 800px window.  snapshot should save x and y as fractional values, from 0 to 1.
+
