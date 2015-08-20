@@ -5,3 +5,7 @@ todo.txt
   * sound
   * networking (firebase)
   * device orientation and acceleration
+
+* TODO: find how to refer to a fn in another prototype?  
+  e.g. ops.forEach(killOscSoftly); rather than saying
+       ops.forEach(function(op){ op.killOscSoftly(); } );
