@@ -13,10 +13,14 @@ function OscPlus(f, a, x, y){
   this.color = choose(colors);
   
   this.draw = function(){
+    push();
     fill(this.color);
-    ellipse(this.x, this.y, 20,20);
+    circSize = map(this.ampCache, 0, 1, 4, 36);
+    noStroke();
+    ellipse(this.x, this.y, circSize, circSize);
     fill(0);
-    text(""+round(this.freqCache), this.x+5, this.y+5);
+    text(""+round(this.freqCache), this.x+10, this.y-10);
+    pop();
   };
   
   this.updatePos = function(x, y){
@@ -92,10 +96,13 @@ function drawSquares(){
 
 function drawTexts(lines)
 {
+  push();
   fill(0);
+  noStroke()
   lines.forEach(function(line, i){
     text(line, width/2, height/2 + 20*i);
   });
+  pop();
 } 
 
 function drawDebugText(){
@@ -125,10 +132,14 @@ function drawOscPluses(){
 function drawFloatingOscPlus(){
 
   if (oscPlusFloating != null){
+    push();
     fill(0);
+    stroke(0);
     line(0, oscPlusFloating.y, width, oscPlusFloating.y);
     line(oscPlusFloating.x, 0, oscPlusFloating.x, height);
+    pop();
     oscPlusFloating.draw();
+
   }
 }
 
