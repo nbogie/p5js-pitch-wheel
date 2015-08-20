@@ -16,3 +16,9 @@ TODO
 * add a snap() fn to tune all the higher freq notes to some accepted ratio of the lowest note's freq (perhaps).
 
 * allow the note-balls to fall and bounce, acted upon by gravity and collisions, their params changing as that happens.  (perhaps use the play.j5 library for that).
+
+* find the right way to test for null vals in js. ugh.
+
+* stop click on snapshot restore.
+
+* consider using own pool of oscs if they don't behave on initial creation / culling.

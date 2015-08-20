@@ -20,3 +20,5 @@ Solution: Use constrain() with it.
   * read more: and http://charlie-roberts.com/gibber/p5-gibber/
 
 * For INTERACTIVITY, sprites, animation, consider p5.play: http://p5play.molleindustria.org/examples/index.html?fileName=collisions2.js
+
+* dump json with JSON.stringify(myObj)
