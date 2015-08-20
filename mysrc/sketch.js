@@ -310,7 +310,7 @@ function drawFloatingOscPlus(){
     f = oscPlusFloating.getRealFreq();
     series = oscPlusFloating.cachedHarmSeq;
     series = series.map(function(elem){ 
-      elem.r = round(elem.f); 
+      elem.r = round(elem.r); 
       elem.x = freqToScreenX(elem.f);
       return elem; });
     //text(JSON.stringify(series), oscPlusFloating.x, oscPlusFloating.y);
@@ -325,8 +325,8 @@ function drawFloatingOscPlus(){
     }
     series.forEach(function(elem, i) { 
       line(elem.x, 0, elem.x, height);
-      text(elem.desc, elem.x+5, oscPlusFloating.y-(i*10));
-      text(fToText(elem.f), elem.x+5, oscPlusFloating.y+20+(i*10));
+      text(elem.desc, elem.x+5, constrain(oscPlusFloating.y-(i*10), 15, height - 30));
+      text(fToText(elem.f), elem.x+5, constrain(oscPlusFloating.y+20+(i*10), 30, height - 15));
     });
 
     pop();
