@@ -41,6 +41,7 @@ var _drawPaletteNameUntil = 0;
 
 
 function setup() {
+  createCanvas(windowWidth, windowHeight);
 
   _schemes = new RingList((new Palette()).makePalettes()); //TODO: static
   _colorsGlobal = _schemes.current();
@@ -48,8 +49,6 @@ function setup() {
   console.log("wheels is now: " + _wheels);
   _snapshots = [];
   _flashMsgs = [];
-  // uncomment this line to make the canvas the full size of the window
-  createCanvas(windowWidth, windowHeight);
   showHelpText = false;
   //randomiseColors();
   _clickPosns = [];
@@ -156,13 +155,36 @@ function keyTyped() {
     showHelpText = !showHelpText;
   }
 
-  if (key==="c") {
-    //randomiseColors();    
-  }
-
   if (key===" ") {
     //TODO: clear
   }
+
+  function remakeWheels(sizeOffset) {
+    var newWheels = _wheels.map(function (w){
+      //TODO: only change if isUnderMousePred
+      return w.remake(w.numDivs() + sizeOffset);
+    });
+    _wheels = newWheels;  
+  }
+
+  if (key === '+' || key === '=') {
+    remakeWheels(1);
+  }
+  if (key === '-') {
+    remakeWheels(-1);
+  }
+
+  
+  if (key == 'c') {
+    _colorsGlobal = _schemes.change();
+    _wheels.forEach(function(w) { w.setColors(_colorsGlobal); } );
+    flashMessage("Palette: "+_colorsGlobal.title(), 1000);
+  }
+
+  if (key == 's') {
+    _colorsGlobal.shuffleSelf();
+  }
+
 }
 
 
@@ -234,32 +256,68 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
   this._y = y;
   this._numDivs = numDivs;
   this._outerCircleRad = outRadius; 
-  this._innerCircleRad = outRadius * 0.8;
+  this._innerCircleRad = outRadius * 0.65;
   this._leftDragStartChunk = null;
   this._rightDragStartChunk = null;
   this._defaultNoteDuration = null;
-  
+  var that = this; //expose this in inner fns.  http://javascript.crockford.com/private.html
+
   //TODO: have the wheel be the interface and not know much about what it controls
   this._oscs = [];
   
   this.makeInitialPlayStates = function (){
     var ss = [];
     for (var i=0; i < this._numDivs; i++) { 
-      ss.push("playing");
+      ss.push("not_playing");
     }
     return ss;
   };
 
   this._states = this.makeInitialPlayStates();
   
-  function freqForChunk(i) {
+  this.numDivs = function() {
+    return this._numDivs;
+  };
+
+  this.clear = function() {
+    this._noteOffQueue = [];
+    this._oscs.forEach(function(o) {
+      o.stop();
+      //o.dispose();//TODO: dispose further of oscillators?
+    }); 
+    this._oscs = [];
+    this._states = this.makeInitialPlayStates();
+  };
+
+
+
+  this.remake = function(n) {
+    this.clear();
+    if (n < 2)
+    {
+      return this;
+    }
+    if (n > 24)
+    {
+      return this;
+    }
+
+    return new Wheel(this._x, this._y, this._outerCircleRad, n, this._colors);
+  };
+
+
+
+  this.freqForChunk = function(i) {
     var fqs = [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 
     440.00, 466.16, 493.88, 523.25, 554.37, 587.33, 622.25, 659.25, 698.46, 739.99, 783.99, 
     830.61, 880.00, 932.33, 987.77, 1046.50];
     //TODO: guard and give better err msg.
     return fqs[i];
-  }
+  };
 
+  this.setColors = function(cs) {
+    this._colors = cs;
+  };
 
   this.draw = function() {
     this.drawCircles();
@@ -280,14 +338,14 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
   };
 
   this.drawInnerCircle = function() {
-    fill(lerpColor(this._colors.get(0), color(255), 0.1));
+    fill(this._colors.get(1));
     ellipse(this._x, this._y, this._innerCircleRad * 2, this._innerCircleRad * 2);
   };
 
   this.drawConnectingLines = function() {
     var pairs = (new Pair()).makeRing(this.playingNotes()); //TODO: static
     pairs.forEach(function(pair) {
-      drawLineBetween(pair.item(), pair.next());
+      that.drawLineBetween(pair.item(), pair.next());
     });
   };
 
@@ -306,7 +364,13 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
       fill(cChunk);
 
       stopAngle = startAngle + delta;
+      //noStroke();
       arc(x, y, arcR, arcR, startAngle, stopAngle);
+      
+      this._states[3] = "playing";
+      this._states[5] = "playing";
+      this._states[9] = "playing";
+      
       if (this._states[0] === "playing") {
         fill(c3);
         var marginAngle = 0;// 0.025; //0.0
@@ -314,7 +378,7 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
         arc(x, y, highlightR, highlightR, startAngle + marginAngle, stopAngle - marginAngle);
       }
 
-      (new DrawingUtils()).drawAnnotationCentredAt(this.centreOfChunkAbsoluteCart(i), ""+i +""+ this._states[i]);//TODO: make static
+      (new DrawingUtils()).drawAnnotationCentredAt(this.centreOfChunkAbsoluteCart(i), ""+i);//TODO: make static
 
       startAngle = stopAngle;
     }
@@ -473,28 +537,28 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
   };
 
   this.playNote = function(chunkIndex, durMs) {
-    var f = freqForChunk(chunkIndex);
+    var f = this.freqForChunk(chunkIndex);
     var osc = this._oscFactory.createOscillator();
 
     osc.freq(f);
     osc.amp(0.2);//_nextAmp);
-    osc.play();
-    this._oscs.add(osc);
-    console.log("playing note: " + chunkIndex +" with durMs " + durMs);
-    var stopTime;
-    if (durMs === null) { 
-      stopTime = null;
-    } else { 
-      stopTime = millis() + durMs;
-    }
-    this.queueNoteOff(chunkIndex, osc, stopTime);
-  };
+osc.play();
+this._oscs.add(osc);
+console.log("playing note: " + chunkIndex +" with durMs " + durMs);
+var stopTime;
+if (durMs === null) { 
+  stopTime = null;
+} else { 
+  stopTime = millis() + durMs;
+}
+this.queueNoteOff(chunkIndex, osc, stopTime);
+};
 
 
-  this.isUnderMouse = function(p) {
-    var dist = (new Pos(this._x, this._y)).distTo(p);
-    return (dist <= this._outerCircleRad);
-  };
+this.isUnderMouse = function(p) {
+  var dist = (new Pos(this._x, this._y)).distTo(p);
+  return (dist <= this._outerCircleRad);
+};
 
 
 
@@ -546,9 +610,9 @@ var Polar = function(r, theta) {
 
 
 var Pair = function(item, prev, next) {
-    this._item = item;
-    this._prev = prev;
-    this._next = next;
+  this._item = item;
+  this._prev = prev;
+  this._next = next;
 
   this.prev = function() {
     return this._prev;
@@ -667,8 +731,8 @@ var DrawingUtils = function() {
 
 var Palette = function (n, title, cs) {
   this._clNum = n;
-  this._cs = cs;
   this._title = title;
+  this._cs = cs;
 
   this.toString = function() {
     return "Palette " + this._cs + " #" +  this._clNum + ": " + this._title;
@@ -691,42 +755,44 @@ var Palette = function (n, title, cs) {
   //Todo make STATIC
   this.makePalette = function(n, title, colorHexes) {
     var csMade = colorHexes.map(function(h){
-      return (unhex(h) | 0xff000000);      
+      return color("#"+h);
     });
     return new Palette(n, title, csMade);
   };
-  //TODO make static
-  this.makePalette = function(title, cs){
-    return new Palette(null, title, cs);
+
+  this.makePaletteRGB = function(n, title, cs) {
+    console.log("cs given: " + cs + ' for title ' + title + " and n " + n);
+    return new Palette(n, title, cs);
   };
 
+  
   this.makePalettes = function() {
     //color scheme - should be printable and be accessible for those with impaired colour vision 
-    var colorsBright = this.makePalette("bright", [
+    var colorsBright = this.makePaletteRGB(-1, "bright", [
       color(241, 103, 69), 
       color( 255, 198, 93), 
       color( 123, 200, 164), 
       color(76, 195, 217)
       ]);
 
-    var colorsGrayscale = this.makePalette("grayscale", [
+    var colorsGrayscale = this.makePaletteRGB(-1, "grayscale", [
       color(0, 0, 0), 
       color(255, 255, 255), 
       color(127), 
       color(196)]);
 
     return [
-      colorsBright, 
-      this.makePalette(92095, "Giant Goldfish", ["69D2E7", "A7DBD8", "E0E4CC", "F38630", "FA6900"]), 
-      this.makePalette(582195, "Chocolate Creams", ["755C3B", "FCFBE3", "FBCFCF", "CDBB99", "A37E58"]), 
-      this.makePalette(437077, "gemtone sea & shore", ["1693A5", "02AAB0", "00CDAC", "7FFF24", "C3FF68"]), 
-      colorsGrayscale, 
-      this.makePalette(625987, "don't you go down", ["EDEBE6", "D6E1C7", "94C7B6", "403B33", "D3643B"]), 
-      this.makePalette(1098589, "coup de grâce", ["99B898", "FECEA8", "FF847C", "E84A5F", "2A363B"]), 
-      this.makePalette(678929, "War", ["230F2B", "F21D41", "EBEBBC", "BCE3C5", "82B3AE"]), 
-      this.makePalette(482416, "Wasabi Suicide", ["FF4242", "F4FAD2", "D4EE5E", "E1EDB9", "F0F2EB"]), 
-      this.makePalette(845564, "it's raining love", ["A3A948", "EDB92E", "F85931", "CE1836", "009989"]), 
-      this.makePalette(444487, "Curiosity Killed", ["EFFFCD", "DCE9BE", "555152", "2E2633", "99173C"]) 
+    colorsBright, 
+    this.makePalette(92095, "Giant Goldfish", ["69D2E7", "A7DBD8", "E0E4CC", "F38630", "FA6900"]), 
+    this.makePalette(582195, "Chocolate Creams", ["755C3B", "FCFBE3", "FBCFCF", "CDBB99", "A37E58"]), 
+    this.makePalette(437077, "gemtone sea & shore", ["1693A5", "02AAB0", "00CDAC", "7FFF24", "C3FF68"]), 
+    colorsGrayscale, 
+    this.makePalette(625987, "don't you go down", ["EDEBE6", "D6E1C7", "94C7B6", "403B33", "D3643B"]), 
+    this.makePalette(1098589, "coup de grâce", ["99B898", "FECEA8", "FF847C", "E84A5F", "2A363B"]), 
+    this.makePalette(678929, "War", ["230F2B", "F21D41", "EBEBBC", "BCE3C5", "82B3AE"]), 
+    this.makePalette(482416, "Wasabi Suicide", ["FF4242", "F4FAD2", "D4EE5E", "E1EDB9", "F0F2EB"]), 
+    this.makePalette(845564, "it's raining love", ["A3A948", "EDB92E", "F85931", "CE1836", "009989"]), 
+    this.makePalette(444487, "Curiosity Killed", ["EFFFCD", "DCE9BE", "555152", "2E2633", "99173C"]) 
     ];
   };
 };//END CLASS Palette
@@ -734,7 +800,7 @@ var Palette = function (n, title, cs) {
 /** An ordered collection of which we can either:
  *   - ask for the current element, or 
  *   - advance to the next one. **/ 
-var RingList = function(items) {
+ var RingList = function(items) {
   this._i = 0;
   this._items = items;
   
