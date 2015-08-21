@@ -41,19 +41,19 @@ function OscPlus(f, a, x, y) {
   this.color = choose(colors);
   this.cachedHarmSeq = harmsAndSubHarms(f);
 
-  this.getAmp = function() {
+  this.getAmp = function () {
     return this.ampCached;
   };
 
   //NOTE: this is into the web audio api and amp may not have a simple value, as it might itself be (for example) an oscillator.
   //Doesn't work if amp has been assigned an env(will eval to 0).
-  this.getRealAmp = function() {
+  this.getRealAmp = function () {
     return this.osc.amp().value;
   };
-  this.getRealFreq = function() {
+  this.getRealFreq = function () {
     return this.osc.freq().value;
   };
-  this.draw = function(withGrid, withNumbers) {
+  this.draw = function (withGrid, withNumbers) {
     push();
     fill(this.color);
     circSize = map(this.getAmp(), 0, maxOscAmp(), 7, 100);
@@ -107,10 +107,10 @@ function makeEnv() {
 
 function makePalette() {
   return [
-    color(241, 103, 69),
-    color(255, 198, 93),
-    color(123, 200, 164),
-    color(76, 195, 217)]; 
+  color(241, 103, 69),
+  color(255, 198, 93),
+  color(123, 200, 164),
+  color(76, 195, 217)]; 
 }
 
 function setup() {
@@ -163,18 +163,18 @@ function setupFirebase() {
 
 
 function loadSnapshotsFromDB() {
-    messagesRef.once("value", function(everything) {
-      var allData = everything.val();
-      console.log(allData);
-      //Object.keys(allData).map(function(k) { return allData[k].type; })
-      // yields: [undefined, undefined, "snapshot"]
-      if (allData != null) {        
-        var snapKeys = Object.keys(allData).filter(function(k) { return "snapshot" === allData[k].type; })
-        snapshots = snapKeys.map(function(k) { return allData[k]; })
-      } else {
-        snapshots = [];
-      }
-  }, function(er) { 
+  messagesRef.once("value", function (everything) {
+    var allData = everything.val();
+    console.log(allData);
+    //Object.keys(allData).map(function (k) { return allData[k].type; })
+    // yields: [undefined, undefined, "snapshot"]
+    if (allData != null) {        
+      var snapKeys = Object.keys(allData).filter(function (k) { return "snapshot" === allData[k].type; })
+      snapshots = snapKeys.map(function (k) { return allData[k]; })
+    } else {
+      snapshots = [];
+    }
+  }, function (er) { 
     console.log("Error retrieving snapshots: "+ er.code)
   });
 }
@@ -182,11 +182,11 @@ function loadSnapshotsFromDB() {
 function shutUp() {  
   //TODO: possibly osc will have been freed when p5 tries to adjust amp subsequent times.
   //      Find out correct way to dispose of a playing amp without hard amp drop.
-  oscPluses.forEach(function(op) { op.killOscSoftly(); } );
+  oscPluses.forEach(function (op) { op.killOscSoftly(); } );
   oscPluses = [];
   if (oscPlusFloating != null) {
     oscPlusFloating.killOscSoftly();
-   oscPlusFloating = null;
+    oscPlusFloating = null;
   }
   randomiseColors();
 
@@ -194,7 +194,7 @@ function shutUp() {
 function quieten() {
   //TODO: quieten should also affect the y value.  Consider moving the y first and just applying mapping of y to amp as normal on any pos change.
   //TODO: this may increase the vol of those quieter than stated here.
-  oscPluses.forEach(function(op) { op.amp(0.1, 1)});
+  oscPluses.forEach(function (op) { op.amp(0.1, 1); });
 }
 
 function getCurrentUserNameOrDefault() {
@@ -206,16 +206,17 @@ function getCurrentUserNameOrDefault() {
 }
 
 function wipeDB() {
-     messagesRef.set(null); 
+  messagesRef.set(null); 
 }
 
 function takeSnapshot() {
   snapshot = 
-  { type: "snapshot", 
+  { 
+    type: "snapshot", 
     owner: getCurrentUserNameOrDefault(),
     title: "untitled",
     time: new Date().getTime(),
-    oscPluses: oscPluses.map(function(op) { return { f: op.getRealFreq(), a: op.getAmp(), x: op.x, y: op.y}; })
+    oscPluses: oscPluses.map(function (op) { return { f: op.getRealFreq(), a: op.getAmp(), x: op.x, y: op.y}; })
   };
   snapshots.push(snapshot);  
   if (messagesRef != null) {
@@ -230,7 +231,7 @@ function restoreSnapshot() {
     snapshot = choose(snapshots);
     if (snapshot != null) {
       shutUp();
-      snapshot.oscPluses.forEach(function(item) { 
+      snapshot.oscPluses.forEach(function (item) { 
         op = new OscPlus(item.f, item.a, item.x, item.y);
         oscPluses.push(op);
       });
@@ -248,7 +249,7 @@ function choose(list) {
 }
 
 function drawSquares() {
-    colors.forEach(function(c, i) { 
+  colors.forEach(function (c, i) { 
     fill(c); 
     var jitter =0; //random(2);
     rect(42*i, 50 + jitter, 40, 40);
@@ -260,39 +261,39 @@ function drawTexts(lines, x, y)
   push();
   fill(0);
   noStroke();
-  lines.forEach(function(line, i) {
+  lines.forEach(function (line, i) {
     text(line, x, y + 20*i);
   });
   pop();
 } 
 
 function drawDebugText(x, y) {
-  var touchesLines = touches.map(function(p, i) {
+  var touchesLines = touches.map(function (p, i) {
     return "touches[" + i + "] = " + p.x + ", " + p.y;
   });
 
   var lines = [//'accelX: ' + accelerationX, 
-           "mouse: " + mouseX + ", " + mouseY, 
-           "single-touch: " + touchX + ", " + touchY];
+  "mouse: " + mouseX + ", " + mouseY, 
+  "single-touch: " + touchX + ", " + touchY];
 
   drawTexts(lines.concat(touchesLines), x, y);
 }
 
 function drawHelpText(x,y) {  
   var lines = [
-           "SPACE - clear current config",
-           "'s' - Snapshot the current config (to local and cloud)",
-           "'r' - Restore a random config",
-           "'d' - load all snapshots from cloud (ready to be restored).",
-           "'g' - Toggle grid on and off (floating osc always uses grid)",
-           "'w' - Toggle show waveform", 
-           "'p' - Toggle show spectrum", 
-           "'q' - Quieten fades(or raises) all osc amps to some low value.",
-           "'c' - randomise colors (within same palette)", 
-           "'h' - Show/Hide this help info",
-           "SPACE - clear current config",
-           ""
-           ];
+  "SPACE - clear current config",
+  "'s' - Snapshot the current config (to local and cloud)",
+  "'r' - Restore a random config",
+  "'d' - load all snapshots from cloud (ready to be restored).",
+  "'g' - Toggle grid on and off (floating osc always uses grid)",
+  "'w' - Toggle show waveform", 
+  "'p' - Toggle show spectrum", 
+  "'q' - Quieten fades(or raises) all osc amps to some low value.",
+  "'c' - randomise colors (within same palette)", 
+  "'h' - Show/Hide this help info",
+  "SPACE - clear current config",
+  ""
+  ];
   push();
   textAlign(LEFT);
   drawTexts(lines, x, y);
@@ -366,22 +367,22 @@ function cullFlashMessages() {
     return;
   }
   timeNow = millis();
-  keep = flashMsgs.filter(function(fm) { 
+  keep = flashMsgs.filter(function (fm) { 
     return (fm.until > timeNow); });
   flashMsgs = keep;
 }
-  
+
 function drawAndCullFlashMessages(x, y) {
   cullFlashMessages();
   push();
   textAlign(CENTER);
-  msgs = flashMsgs.map(function(item) { return item.msg; });
+  msgs = flashMsgs.map(function (item) { return item.msg; });
   drawTexts(msgs, x, y);
   pop();
 }
 
 function drawOscPluses(withGrid, withNumbers) {
-  oscPluses.forEach(function(op) { op.draw(withGrid, withNumbers)});
+  oscPluses.forEach(function (op) { op.draw(withGrid, withNumbers)});
 }
 
 function freqToScreenX(f) {
@@ -405,46 +406,46 @@ function drawFloatingOscPlus(withGrid, withNumbers) {
 }
 
 function drawGridFor(osc, withNumbers) {
-    f = osc.getRealFreq();
-    series = osc.cachedHarmSeq;
-    series = series.map(function(elem) { 
-      elem.r = round(elem.r); 
-      elem.x = freqToScreenX(elem.f);
-      return elem; 
-    });
+  f = osc.getRealFreq();
+  series = osc.cachedHarmSeq;
+  series = series.map(function (elem) { 
+    elem.r = round(elem.r); 
+    elem.x = freqToScreenX(elem.f);
+    return elem; 
+  });
 
-    function fToText(fr) {
-      fr = round(fr);
-      if (fr < 100) {
-        return ""+fr;
-      } else {
-       return fr + "Hz" 
-      }  
-       
+  function fToText(fr) {
+    fr = round(fr);
+    if (fr < 100) {
+      return ""+fr;
+    } else {
+      return fr + "Hz";
+    }  
+  }
+  //console.log(series.length);
+  //stroke(0.5, 0);
+  //stroke("0xAAB0B0B0");
+  push();
+  fill(0);
+  stroke(0);
+  series.forEach(function (elem, i) { 
+    //strokeWeight(1);
+    line(elem.x, 0, elem.x, height);
+  });
+  pop();
+
+  push();
+  noStroke();
+  fill(0);
+  series.forEach(function (elem, i) { 
+    if (withNumbers) {
+      text(elem.desc, elem.x+5, constrain(osc.y-(i*10), 15, height - 30));
+      text(fToText(elem.f), elem.x+5, constrain(osc.y+20+(i*10), 30, height - 15));
     }
-    //console.log(series.length);
-    //stroke(0.5, 0);
-    //stroke("0xAAB0B0B0");
-    push();
-    fill(0);
-    stroke(0);
-    series.forEach(function(elem, i) { 
-      //strokeWeight(1);
-      line(elem.x, 0, elem.x, height);
-    });
-    pop();
-
-    push();
-    noStroke()
-    fill(0);
-    series.forEach(function(elem, i) { 
-      if (withNumbers) {
-        text(elem.desc, elem.x+5, constrain(osc.y-(i*10), 15, height - 30));
-        text(fToText(elem.f), elem.x+5, constrain(osc.y+20+(i*10), 30, height - 15));
-      }
-    });
-    pop();
+  });
+  pop();
 }
+
 function keyPressed() {
   if (keyCode === 32) {
     shutUp();
@@ -466,14 +467,14 @@ function keyTyped() {
     showHelpText = !showHelpText;
   }
   if (key==="g") {
-      gridWithOtherOscs = !gridWithOtherOscs;
+    gridWithOtherOscs = !gridWithOtherOscs;
   }
   if (key==="w") {
-      showWaveform = !showWaveform;
+    showWaveform = !showWaveform;
   }
 
   if (key==="p") {
-      showSpectrum = !showSpectrum;
+    showSpectrum = !showSpectrum;
   }
 
   if (key==="q") {
@@ -518,15 +519,17 @@ function mouseDragged() {
 
 function harmsAndSubHarms(baseF) {
   ratioStrs = ["1/6", "1/5", "1/4", "1/3", "1/2", "1", "2", "3", "4", "5", "6"];
-  return ratioStrs.map(function(r) { 
-    return { r: eval(r), 
-             f: eval(r) * baseF, 
-             desc: r }; });
+  return ratioStrs.map(function (r) { 
+    return { 
+      r: eval(r), 
+      f: eval(r) * baseF, 
+      desc: r 
+    }; });
 }
 
 function mouseOrTouchDragged(x, y) {
   console.log("touch moved");
-  if (oscPlusFloating!=null) {  
+  if (oscPlusFloating != null) {  
     oscPlusFloating.freq(mapXValToFreq(x), 0.05);
     oscPlusFloating.amp(mapYValToAmp(y), 0.05);
     oscPlusFloating.updatePos(x,y);
@@ -559,13 +562,11 @@ function mouseOrTouchEnded() {
 
 function mouseOrTouchStarted(x, y) {
   newOsc = new OscPlus(mapXValToFreq(x), 
-                       mapYValToAmp(y), x, y);
+   mapYValToAmp(y), x, y);
   if(oscPlusFloating != null) {
     oscPlusFloating.killOscSoftly();
   }
-
   oscPlusFloating = newOsc;
-
   return false;
 }
 
