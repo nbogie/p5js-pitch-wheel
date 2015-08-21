@@ -1,4 +1,4 @@
-//"use strict";
+"use strict";
 var colors;
 var bgColor;
 var spectrumColor;
@@ -284,7 +284,7 @@ function drawHelpText(x,y) {
   var lines = [
   "SPACE - clear current config",
   "'s' - Snapshot the current config (to local and cloud)",
-  "'r' - Restore a random config",
+  "'r' - Restore a (random) config (likely from public cloud)",
   "'d' - load all snapshots from cloud (ready to be restored).",
   "'g' - Toggle grid on and off (floating osc always uses grid)",
   "'w' - Toggle show waveform", 
@@ -292,7 +292,6 @@ function drawHelpText(x,y) {
   "'q' - Quieten fades(or raises) all osc amps to some low value.",
   "'c' - randomise colors (within same palette)", 
   "'h' - Show/Hide this help info",
-  "SPACE - clear current config",
   ""
   ];
   push();

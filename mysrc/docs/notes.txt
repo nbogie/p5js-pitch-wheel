@@ -27,3 +27,6 @@ Solution: Use constrain() with it.
 * js fiddle with harm seq (mine): http://jsfiddle.net/f54kah0r/
 
 * use setTimeout(fn, time) to register a callback to happen later.  Check this is still preferred in p5.js.
+
+* "use strict"; at the start of each .js and most browsers will fail quickly on, for instance, vars used without first being declared.  x = 10; vs var x=10;  Also use jsHint or jsLint to catch these in the editor, first.
+Be careful of source-file concatenation which might lead to "use strict" being assumed for all js content.
