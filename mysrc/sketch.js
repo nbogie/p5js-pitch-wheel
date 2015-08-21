@@ -12,6 +12,7 @@ var showHelpText;
 var showWaveform;
 var showSpectrum;
 var gridWithOtherOscs;
+var fft;
 
 var lowestFreq = 30;
 var highestFreq = 3000;
@@ -56,7 +57,7 @@ function OscPlus(f, a, x, y) {
   this.draw = function (withGrid, withNumbers) {
     push();
     fill(this.color);
-    circSize = map(this.getAmp(), 0, maxOscAmp(), 7, 100);
+    var circSize = map(this.getAmp(), 0, maxOscAmp(), 7, 100);
     push();
     noStroke();
     ellipse(this.x, this.y, circSize, circSize);
@@ -92,7 +93,7 @@ function OscPlus(f, a, x, y) {
   };
 }
 
-function makeEnv() {
+function makeEnvNOTUSED() {
   var aT = 0.05; // attack time in seconds
   var aL = 0.8; // attack level 0.0 to 1.0
   var dT = 0.3; // decay time in seconds
@@ -169,13 +170,13 @@ function loadSnapshotsFromDB() {
     //Object.keys(allData).map(function (k) { return allData[k].type; })
     // yields: [undefined, undefined, "snapshot"]
     if (allData != null) {        
-      var snapKeys = Object.keys(allData).filter(function (k) { return "snapshot" === allData[k].type; })
-      snapshots = snapKeys.map(function (k) { return allData[k]; })
+      var snapKeys = Object.keys(allData).filter(function (k) { return "snapshot" === allData[k].type; });
+      snapshots = snapKeys.map(function (k) { return allData[k]; });
     } else {
       snapshots = [];
     }
   }, function (er) { 
-    console.log("Error retrieving snapshots: "+ er.code)
+    console.log("Error retrieving snapshots: "+ er.code);
   });
 }
 
@@ -210,7 +211,7 @@ function wipeDB() {
 }
 
 function takeSnapshot() {
-  snapshot = 
+  var snapshot = 
   { 
     type: "snapshot", 
     owner: getCurrentUserNameOrDefault(),
@@ -228,11 +229,11 @@ function restoreSnapshot() {
   if (snapshots === undefined || snapshots === null) {
     console.log("snapshots undefined or null!");
   }else {
-    snapshot = choose(snapshots);
+    var snapshot = choose(snapshots);
     if (snapshot != null) {
       shutUp();
       snapshot.oscPluses.forEach(function (item) { 
-        op = new OscPlus(item.f, item.a, item.x, item.y);
+        var op = new OscPlus(item.f, item.a, item.x, item.y);
         oscPluses.push(op);
       });
     }
@@ -307,7 +308,7 @@ function drawSpectrum(spectrum) {
   for (var i = 0; i< spectrum.length; i++) {
     var x = map(i, 0, spectrum.length / 8, 0, width);
     var h = -height + map(spectrum[i], 0, 255, height, 0);
-    rect(x, height, width / spectrum.length, h )
+    rect(x, height, width / spectrum.length, h );
   }
   pop();
 }
@@ -348,8 +349,8 @@ function draw() {
     drawFFTWaveform();
   }
 
-  gridWithFloatingOsc = true;
-  numbersWithFloatingOsc = gridWithFloatingOsc;
+  var gridWithFloatingOsc = true;
+  var numbersWithFloatingOsc = gridWithFloatingOsc;
 
   drawOscPluses(gridWithOtherOscs, false);
   drawFloatingOscPlus(gridWithFloatingOsc, numbersWithFloatingOsc);
@@ -366,8 +367,8 @@ function cullFlashMessages() {
   if (flashMsgs.length<1) {
     return;
   }
-  timeNow = millis();
-  keep = flashMsgs.filter(function (fm) { 
+  var timeNow = millis();
+  var keep = flashMsgs.filter(function (fm) { 
     return (fm.until > timeNow); });
   flashMsgs = keep;
 }
@@ -376,13 +377,13 @@ function drawAndCullFlashMessages(x, y) {
   cullFlashMessages();
   push();
   textAlign(CENTER);
-  msgs = flashMsgs.map(function (item) { return item.msg; });
+  var msgs = flashMsgs.map(function (item) { return item.msg; });
   drawTexts(msgs, x, y);
   pop();
 }
 
 function drawOscPluses(withGrid, withNumbers) {
-  oscPluses.forEach(function (op) { op.draw(withGrid, withNumbers)});
+  oscPluses.forEach(function (op) { op.draw(withGrid, withNumbers); });
 }
 
 function freqToScreenX(f) {
@@ -406,8 +407,7 @@ function drawFloatingOscPlus(withGrid, withNumbers) {
 }
 
 function drawGridFor(osc, withNumbers) {
-  f = osc.getRealFreq();
-  series = osc.cachedHarmSeq;
+  var series = osc.cachedHarmSeq;
   series = series.map(function (elem) { 
     elem.r = round(elem.r); 
     elem.x = freqToScreenX(elem.f);
@@ -428,7 +428,7 @@ function drawGridFor(osc, withNumbers) {
   push();
   fill(0);
   stroke(0);
-  series.forEach(function (elem, i) { 
+  series.forEach(function (elem) { 
     //strokeWeight(1);
     line(elem.x, 0, elem.x, height);
   });
@@ -454,7 +454,7 @@ function keyPressed() {
 
 function flashMessage(str, durMs) {
   durMs = durMs || 1000;
-  until = millis() + durMs;
+  var until = millis() + durMs;
   flashMsgs.push({msg: str, until: until});
 }
 
@@ -518,7 +518,7 @@ function mouseDragged() {
 }
 
 function harmsAndSubHarms(baseF) {
-  ratioStrs = ["1/6", "1/5", "1/4", "1/3", "1/2", "1", "2", "3", "4", "5", "6"];
+  var ratioStrs = ["1/6", "1/5", "1/4", "1/3", "1/2", "1", "2", "3", "4", "5", "6"];
   return ratioStrs.map(function (r) { 
     return { 
       r: eval(r), 
@@ -561,7 +561,7 @@ function mouseOrTouchEnded() {
 
 
 function mouseOrTouchStarted(x, y) {
-  newOsc = new OscPlus(mapXValToFreq(x), 
+  var newOsc = new OscPlus(mapXValToFreq(x), 
    mapYValToAmp(y), x, y);
   if(oscPlusFloating != null) {
     oscPlusFloating.killOscSoftly();
