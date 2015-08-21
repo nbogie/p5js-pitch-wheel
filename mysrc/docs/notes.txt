@@ -32,3 +32,9 @@ Solution: Use constrain() with it.
 Be careful of source-file concatenation which might lead to "use strict" being assumed for all js content.
 
 * On javascript private members and scope: http://javascript.crockford.com/private.html
+
+* Right-button dragging won't work correctly on a browser without fiddling.  Browser-users expect to do other stuff with right clicking, like choose copy-paste.
+
+* Mouse-left and Right button stuff doesn't fit with touch.  (unless we say two-finger drag is equivalent to right-button drag.)
+
+* Keyboard commands don't work on a phone/tablet with no keyboard.
