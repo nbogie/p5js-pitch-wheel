@@ -169,7 +169,7 @@ function loadSnapshotsFromDB() {
     console.log(allData);
     //Object.keys(allData).map(function (k) { return allData[k].type; })
     // yields: [undefined, undefined, "snapshot"]
-    if (allData != null) {        
+    if (allData !== null) {
       var snapKeys = Object.keys(allData).filter(function (k) { return "snapshot" === allData[k].type; });
       snapshots = snapKeys.map(function (k) { return allData[k]; });
     } else {
@@ -185,7 +185,7 @@ function shutUp() {
   //      Find out correct way to dispose of a playing amp without hard amp drop.
   oscPluses.forEach(function (op) { op.killOscSoftly(); } );
   oscPluses = [];
-  if (oscPlusFloating != null) {
+  if (oscPlusFloating !== null) {
     oscPlusFloating.killOscSoftly();
     oscPlusFloating = null;
   }
@@ -220,7 +220,7 @@ function takeSnapshot() {
     oscPluses: oscPluses.map(function (op) { return { f: op.getRealFreq(), a: op.getAmp(), x: op.x, y: op.y}; })
   };
   snapshots.push(snapshot);  
-  if (messagesRef != null) {
+  if (messagesRef !== null) {
     messagesRef.push(snapshot);
   }
 }
@@ -230,7 +230,7 @@ function restoreSnapshot() {
     console.log("snapshots undefined or null!");
   }else {
     var snapshot = choose(snapshots);
-    if (snapshot != null) {
+    if (snapshot !== null) {
       shutUp();
       snapshot.oscPluses.forEach(function (item) { 
         var op = new OscPlus(item.f, item.a, item.x, item.y);
@@ -393,7 +393,7 @@ function freqToScreenX(f) {
 
 function drawFloatingOscPlus(withGrid, withNumbers) {
 
-  if (oscPlusFloating != null) {
+  if (oscPlusFloating !== null) {
     push();
     fill(0);
     stroke(0);
@@ -529,7 +529,7 @@ function harmsAndSubHarms(baseF) {
 
 function mouseOrTouchDragged(x, y) {
   console.log("touch moved");
-  if (oscPlusFloating != null) {  
+  if (oscPlusFloating !== null) {  
     oscPlusFloating.freq(mapXValToFreq(x), 0.05);
     oscPlusFloating.amp(mapYValToAmp(y), 0.05);
     oscPlusFloating.updatePos(x,y);
@@ -553,7 +553,7 @@ function touchEnded() {
 }
 
 function mouseOrTouchEnded() {
-  if (oscPlusFloating != null) {
+  if (oscPlusFloating !== null) {
     oscPluses.push(oscPlusFloating);  //TODO: consider making a new osc based on the floating one.
     oscPlusFloating = null;
   }
@@ -563,7 +563,7 @@ function mouseOrTouchEnded() {
 function mouseOrTouchStarted(x, y) {
   var newOsc = new OscPlus(mapXValToFreq(x), 
    mapYValToAmp(y), x, y);
-  if(oscPlusFloating != null) {
+  if(oscPlusFloating !== null) {
     oscPlusFloating.killOscSoftly();
   }
   oscPlusFloating = newOsc;
@@ -572,4 +572,22 @@ function mouseOrTouchStarted(x, y) {
 
 function mouseClicked() {
   //randomiseColors();
+}
+
+function pacifyJSHintByCallingP5Functions(){
+  //there's probably a way to tell jshint that
+  //these fns will be called only by a framework.
+  if (false){
+    setup();
+    draw();
+    mouseClicked();
+    mousePressed();
+    mouseReleased();
+    mouseDragged();
+    touchStarted();
+    touchMoved();
+    touchEnded();
+    keyPressed();
+    keyTyped();
+  }
 }
