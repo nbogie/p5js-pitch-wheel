@@ -23,3 +23,5 @@ Solution: Use constrain() with it.
 
 * dump json with JSON.stringify(myObj).  Use this in the debugger instead of implementing toString() for each class.
 
+
+* js fiddle with harm seq (mine): http://jsfiddle.net/f54kah0r/
