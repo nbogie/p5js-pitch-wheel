@@ -25,3 +25,5 @@ Solution: Use constrain() with it.
 
 
 * js fiddle with harm seq (mine): http://jsfiddle.net/f54kah0r/
+
+* use setTimeout(fn, time) to register a callback to happen later.  Check this is still preferred in p5.js.
