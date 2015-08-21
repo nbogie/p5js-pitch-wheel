@@ -95,7 +95,7 @@ function makeOsc(f, a){
   osc.freq(f, 0.05);
   //a simple env to fade in to the given target amplitude.
   //really we just want to avoid clicking.
-  flashMessage("amp: " + a.toPrecision(2), 500);
+  //flashMessage("amp: " + a.toPrecision(2), 500);
   var env = new p5.Env(2, a, 10)//  makeEnv();
   osc.amp(env);
   osc.start();
@@ -118,8 +118,8 @@ function setup() {
   flashMsgs = [];
   fft = new p5.FFT();
   // uncomment this line to make the canvas the full size of the window
-  createCanvas(windowWidth, windowHeight-100);
-  showHelpText = true;
+  createCanvas(windowWidth, windowHeight);
+  showHelpText = false;
   colors = makePalette();
   randomiseColors();
   bgColor = color(100);//lets us see we've reloaded page
@@ -152,8 +152,8 @@ function setupFirebase(){
   function handleNewMessage(snapshot) {
     var data = snapshot.val();
     console.log("new message added to firebase...");
-    flashMessage("new entry in db");
-    console.log(data)
+    //flashMessage("new entry in db");
+    //console.log(data)
   }
 
   // Add a callback that is triggered for each chat message.
@@ -325,25 +325,27 @@ function drawWaveform(waveform){
   pop();
 }
 
-function drawFFT(){
+function drawFFTSpectrum(){
+  var spectrum = fft.analyze(); 
+  drawSpectrum(spectrum);
+}
 
-  if (showSpectrum){
-    var spectrum = fft.analyze(); 
-    drawSpectrum(spectrum);
-  }
-
-  if (showWaveform){
-    var waveform = fft.waveform();
-    drawWaveform(waveform);
-  }
+function drawFFTWaveform(){
+  var waveform = fft.waveform();
+  drawWaveform(waveform);
 }
 
 function draw() {
   background(bgColor);
   drawSquares();
 
-  drawFFT();
+  if (showSpectrum){
+    drawFFTSpectrum();
+  }
 
+  if (showWaveform){
+    drawFFTWaveform();
+  }
 
   gridWithFloatingOsc = true;
   numbersWithFloatingOsc = gridWithFloatingOsc;
