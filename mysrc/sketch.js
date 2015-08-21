@@ -1,11 +1,15 @@
 var colors;
 var bgColor;
+var spectrumColor;
+var waveformColor;
 var oscPluses;
 var oscPlusFloating;
 var snapshots;
 var flashMsgs;
 var currentUserNameM;
 var showHelpText;
+var showWaveform;
+var showSpectrum;
 var gridWithOtherOscs;
 
 var lowestFreq = 30;
@@ -37,7 +41,7 @@ function OscPlus(f, a, x, y){
   this.draw = function(withGrid, withNumbers){
     push();
     fill(this.color);
-    circSize = map(this.getAmp(), 0, 1, 14, 50);
+    circSize = map(this.getAmp(), 0, maxOscAmp(), 7, 100);
     push();
     noStroke();
     ellipse(this.x, this.y, circSize, circSize);
@@ -91,6 +95,7 @@ function makeOsc(f, a){
   osc.freq(f, 0.05);
   //a simple env to fade in to the given target amplitude.
   //really we just want to avoid clicking.
+  flashMessage("amp: " + a.toPrecision(2), 500);
   var env = new p5.Env(2, a, 10)//  makeEnv();
   osc.amp(env);
   osc.start();
@@ -111,17 +116,34 @@ function makePalette(){
 function setup() {
   snapshots = [];
   flashMsgs = [];
+  fft = new p5.FFT();
   // uncomment this line to make the canvas the full size of the window
   createCanvas(windowWidth, windowHeight-100);
   showHelpText = true;
-  bgColor = color(100);
   colors = makePalette();
+  randomiseColors();
+  bgColor = color(100);//lets us see we've reloaded page
   oscPluses = [];
   oscPlusFloating = null;
   gridWithOtherOscs = false;
+  showSpectrum = true;
+  showWaveform= true;
 
   setupFirebase();
   loadSnapshotsFromDB();
+}
+function maxOscAmp(){
+  return 0.15;
+}
+
+function except(list, item){
+  return list.filter(function(c){ return c !== item});
+}
+
+function randomiseColors(){
+  bgColor = choose(colors);
+  spectrumColor = choose(except(colors, bgColor));
+  waveformColor = choose(except(colors, bgColor).concat([color(0), color(255)]));
 }
 
 function setupFirebase(){
@@ -166,7 +188,8 @@ function shutUp(){
     oscPlusFloating.killOscSoftly();
    oscPlusFloating = null;
   }
-  bgColor = choose(colors);
+  randomiseColors();
+
 }
 function quieten(){
   //TODO: quieten should also affect the y value.  Consider moving the y first and just applying mapping of y to amp as normal on any pos change.
@@ -262,7 +285,10 @@ function drawHelpText(x,y){
            "'r' - Restore a random config",
            "'d' - load all snapshots from cloud (ready to be restored).",
            "'g' - Toggle grid on and off (floating osc always uses grid)",
+           "'w' - Toggle show waveform", 
+           "'p' - Toggle show spectrum", 
            "'q' - Quieten fades(or raises) all osc amps to some low value.",
+           "'c' - randomise colors (within same palette)", 
            "'h' - Show/Hide this help info",
            "SPACE - clear current config",
            ""
@@ -273,11 +299,52 @@ function drawHelpText(x,y){
   pop();
 
 }
+function drawSpectrum(spectrum){
+  push();
+  noStroke();
+  fill(spectrumColor);
+  for (var i = 0; i< spectrum.length; i++){
+    var x = map(i, 0, spectrum.length / 8, 0, width);
+    var h = -height + map(spectrum[i], 0, 255, height, 0);
+    rect(x, height, width / spectrum.length, h )
+  }
+  pop();
+}
+function drawWaveform(waveform){
+  push();
+  noFill();
+  beginShape();
+  stroke(waveformColor); // waveform is red
+  strokeWeight(1);
+  for (var i = 0; i< waveform.length; i++){
+    var x = map(i, 0, waveform.length, 0, width);
+    var y = map( waveform[i], -1, 1, 0, height);
+    vertex(x,y);
+  }
+  endShape();
+  pop();
+}
+
+function drawFFT(){
+
+  if (showSpectrum){
+    var spectrum = fft.analyze(); 
+    drawSpectrum(spectrum);
+  }
+
+  if (showWaveform){
+    var waveform = fft.waveform();
+    drawWaveform(waveform);
+  }
+}
+
 function draw() {
   background(bgColor);
   drawSquares();
 
-  
+  drawFFT();
+
+
   gridWithFloatingOsc = true;
   numbersWithFloatingOsc = gridWithFloatingOsc;
 
@@ -285,7 +352,7 @@ function draw() {
   drawFloatingOscPlus(gridWithFloatingOsc, numbersWithFloatingOsc);
 
   if (showHelpText){ 
-    drawHelpText(400,height - 200); 
+    drawHelpText(400,height - 250); 
     drawDebugText(150,height - 150); 
   } 
 
@@ -399,6 +466,13 @@ function keyTyped(){
   if (key==='g'){
       gridWithOtherOscs = !gridWithOtherOscs;
   }
+  if (key==='w'){
+      showWaveform = !showWaveform;
+  }
+
+  if (key==='p'){
+      showSpectrum = !showSpectrum;
+  }
 
   if (key==='q'){
     quieten();
@@ -416,16 +490,19 @@ function keyTyped(){
     restoreSnapshot();    
     flashMessage("restored a snapshot");
   }
+  if (key==='c'){
+    randomiseColors();    
+  }
 }
-function xValToFreq(x){
+function mapXValToFreq(x){
   //TODO: constrain. 
   //TODO: linear / exp?
   return map(x, 0, width, lowestFreq, highestFreq);
 }
 
-function yValToAmp(y){
+function mapYValToAmp(y){
   //TODO: constrain. 
-  return map(y, height, 0, 0, 1);
+  return map(y, height, 0, 0, maxOscAmp());
 }
 
 function touchMoved(){
@@ -448,8 +525,8 @@ function harmsAndSubHarms(baseF){
 function mouseOrTouchDragged(x, y){
   console.log("touch moved");
   if (oscPlusFloating!=null){  
-    oscPlusFloating.freq(xValToFreq(x), 0.05);
-    oscPlusFloating.amp(yValToAmp(y), 0.05);
+    oscPlusFloating.freq(mapXValToFreq(x), 0.05);
+    oscPlusFloating.amp(mapYValToAmp(y), 0.05);
     oscPlusFloating.updatePos(x,y);
   }
   return false;
@@ -479,8 +556,8 @@ function mouseOrTouchEnded(){
 
 
 function mouseOrTouchStarted(x, y){
-  newOsc = new OscPlus(xValToFreq(x), 
-                       yValToAmp(y), x, y);
+  newOsc = new OscPlus(mapXValToFreq(x), 
+                       mapYValToAmp(y), x, y);
   if(oscPlusFloating != null){
     oscPlusFloating.killOscSoftly();
   }
@@ -491,5 +568,5 @@ function mouseOrTouchStarted(x, y){
 }
 
 function mouseClicked() {
-  bgColor = choose(colors);
+  //randomiseColors();
 }
