@@ -40,6 +40,8 @@ var _colorsGlobal;
 var _drawPaletteNameUntil = 0;
 
 
+
+
 function setup() {
   createCanvas(windowWidth, windowHeight);
 
@@ -306,6 +308,11 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
   };
 
 
+  this.labelForChunk = function(i) {
+    var pitchClasses = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A" ,"A#", "B"];
+    var labels = pitchClasses.concat(pitchClasses);
+    return labels[i];
+  };
 
   this.freqForChunk = function(i) {
     var fqs = [261.63, 277.18, 293.66, 311.13, 329.63, 349.23, 369.99, 392.00, 415.30, 
@@ -339,6 +346,7 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
 
   this.drawInnerCircle = function() {
     fill(this._colors.get(1));
+    stroke(255);
     ellipse(this._x, this._y, this._innerCircleRad * 2, this._innerCircleRad * 2);
   };
 
@@ -364,7 +372,7 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
       fill(cChunk);
 
       stopAngle = startAngle + delta;
-      //noStroke();
+      noStroke();
       arc(x, y, arcR, arcR, startAngle, stopAngle);
       
       this._states[3] = "playing";
@@ -378,7 +386,7 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
         arc(x, y, highlightR, highlightR, startAngle + marginAngle, stopAngle - marginAngle);
       }
 
-      (new DrawingUtils()).drawAnnotationCentredAt(this.centreOfChunkAbsoluteCart(i), ""+i);//TODO: make static
+      DrawingUtils.drawAnnotationCentredAt(this.centreOfChunkAbsoluteCart(i), this.labelForChunk(i));//TODO: make static
 
       startAngle = stopAngle;
     }
@@ -706,28 +714,28 @@ var Pos = function(x, y) {
   };
 };//END CLASS POS
 
-var DrawingUtils = function() {
 
-  this.textCentred = function(annot, pos) {
+var DrawingUtils = {
+
+  textCentred: function(annot, pos) {
     var x = pos.x()- textWidth(annot)/2;
     var y =  pos.y() + textAscent()/2;
     text(annot, x, y);
-  };
+  },
 
-  this.drawAnnotationCentredAt = function(p, annot) {
+  drawAnnotationCentredAt: function(p, annot) {
     fill(0);
     textSize(22);
-    this.textCentred(annot, p);
-  };
+    DrawingUtils.textCentred(annot, p);
+  },
 
-  this.drawAnnotationAt = function(p, annot) {
+  drawAnnotationAt: function(p, annot) {
     fill(0);
     textSize(22);
     text(annot, p.x(),p.y());
-  };
-
-  
+  }
 };  //DrawingUtils
+
 
 var Palette = function (n, title, cs) {
   this._clNum = n;
@@ -767,11 +775,12 @@ var Palette = function (n, title, cs) {
 
   
   this.makePalettes = function() {
+
     //color scheme - should be printable and be accessible for those with impaired colour vision 
     var colorsBright = this.makePaletteRGB(-1, "bright", [
       color(241, 103, 69), 
-      color( 255, 198, 93), 
-      color( 123, 200, 164), 
+      color(255, 198, 93), 
+      color(123, 200, 164), 
       color(76, 195, 217)
       ]);
 
@@ -817,3 +826,4 @@ var Palette = function (n, title, cs) {
     return this.current();
   };
 };  // END CLASS RingList
+
