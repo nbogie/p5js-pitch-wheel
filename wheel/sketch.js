@@ -182,6 +182,17 @@ function keyTyped() {
     });
     _wheels = newWheels;  
   }
+  if (key === '>' || key === '.') {
+    _wheels.forEach(function(w) { 
+      w.rotatePlayingNotesFromTo(0, 1);
+    } );
+  }
+  if (key === '<' || key === ',') {
+    _wheels.forEach(function(w) { 
+      w.rotatePlayingNotesFromTo(1, 0);
+    } );
+  }
+    
 
   if (key === '+' || key === '=') {
     remakeWheels(1);
@@ -189,7 +200,6 @@ function keyTyped() {
   if (key === '-') {
     remakeWheels(-1);
   }
-
   
   if (key == 'c') {
     _colorsGlobal = _schemes.change();
@@ -337,7 +347,6 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
     }); 
     _oscs = [];
     _states = this.makeInitialPlayStates();
-    flashMessage("cleared all", 1000);
   };
 
 
@@ -479,6 +488,39 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
   
   this.isChunkPlaying = function(chunkIx) {
     return(_states[chunkIx] === "playing");
+  };
+
+  //from: http://stackoverflow.com/questions/1985260/javascript-array-rotate
+  Array.prototype.mmRotate = (function() {
+      // save references to array functions to make lookup faster
+      var push = Array.prototype.push,
+          splice = Array.prototype.splice;
+
+      return function(count) {
+          var len = this.length >>> 0, // convert to uint
+              count = count >> 0; // convert to int
+
+          // convert count to value in range [0, len)
+          count = ((count % len) + len) % len;
+
+          // use splice.call() instead of this.splice() to make function generic
+          push.apply(this, splice.call(this, 0, count));
+          return this;
+      };
+  })();
+
+  this.rotatePlayingNotesFromTo = function(start, end) {
+    console.log("rotating playing notes from " + start + " to " +end+ " given numDivs=" + this.numDivs());
+    var newStates = _states.slice();
+    newStates.mmRotate(start - end);
+    this.clear();
+
+    newStates.forEach(function(ns, i){
+      if (ns === "playing") {
+        that.playNote(i, null);//TODO: preserve duration of prev note incarnation.
+        _states[i] = "playing";
+      }
+    });
   };
 
   this.handleMouseMoved = function(absPos) {
