@@ -677,7 +677,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
     _noteOffQueue.forEach(function(noteOff) {
       if (noteOff.isForChunk(chunkIx)) {
         that.stopNote(noteOff);
-        console.log("stopping note for chunk : " + chunkIx);
+        //console.log("stopping note for chunk : " + chunkIx);
       } else {
         newQueue.push(noteOff);
       }
@@ -759,7 +759,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
 
   this.playNote = function(chunkIndex, durMs) {
     var f = this.freqForChunk(chunkIndex);
-    var osc = this.makeOsc(f, 0.2);
+    var osc = this.makeOsc(f, 0.15);
     //hold onto the note in a list of oscillators AND a list of notes (oscs) to stop at some point in the future.
     _oscs.push(osc);
 //    console.log("playing note: " + chunkIndex +" with durMs " + durMs);
