@@ -353,7 +353,6 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
     _oscs.forEach(function(o) {
       o.amp(0, 0.04);
       window.setTimeout(function () { o.stop(); }, 50);
-      //o.dispose();//TODO: dispose further of oscillators?
     }); 
     _oscs = [];
     _states = this.makeInitialPlayStates();
@@ -692,8 +691,10 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
   // long after they've been removed from the wheel.
   this.stopNote = function(noteOff) {
     if (noteOff.osc() !== null) {
-      noteOff.osc().stop();
-      noteOff.osc().amp(0);
+      noteOff.osc().amp(0, 0.04);
+      window.setTimeout(function () {
+        noteOff.osc().stop();
+      }, 50);      
     }
   };
 
