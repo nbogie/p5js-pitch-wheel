@@ -58,6 +58,7 @@ function setup() {
 
 }
 
+
 function makeWheels(){
   var ws = [];
   console.log(_colorsGlobal);
@@ -78,10 +79,13 @@ function choose(list) {
 function drawTexts(lines, x, y)
 {
   push();
+  //fill(0);
+  //noStroke();
+  stroke(255);
   fill(0);
-  noStroke();
+  
   lines.forEach(function (line, i) {
-    text(line, x, y + 20*i);
+    text(line, x, y + 25*i);
   });
   pop();
 } 
@@ -190,7 +194,6 @@ function keyTyped() {
 
 }
 
-
 function touchMoved() {
   mouseOrTouchDragged(touchX, touchY);
   return false;
@@ -200,10 +203,6 @@ function mouseDragged() {
   mouseOrTouchDragged(mouseX, mouseY);
 }
 
-function mouseOrTouchDragged(x, y) {
-  console.log("touch moved");
-  return false;
-}
 function mousePressed() {
   mouseOrTouchStarted(mouseX, mouseY);
 }
@@ -212,26 +211,67 @@ function touchStarted() {
   mouseOrTouchStarted(touchX, touchY);
   return false;
 }
+
 function mouseReleased() {
   mouseOrTouchEnded();
-
 }
+
 function touchEnded() {
   mouseOrTouchEnded();
 }
 
 function mouseOrTouchEnded() {
+  _isLeftDragging = false;
+  _isRightDragging = false;
+  flashMessage("mouse/touch ended");
 }
-
 
 function mouseOrTouchStarted(x, y) {
-  //var newOsc = new OscPlus(mapXValToFreq(x),    
-    return false;
+  flashMessage("mouse/touch started " + [x, y], 500);
+/**
+  for (Wheel w : _wheels) {
+    w.handleMouseClicked(new Pos(mouseX, mouseY));
   }
-
-  function mouseClicked() {
-  //randomiseColors();
+  */
 }
+
+//just recognition of button and start / continued drag, 
+//and then delegation...
+function mouseOrTouchDragged(x, y) {
+  //TODO: make this work with single/double touch?
+  //It won't work with touch as it refers to mouse button left /right.  
+  
+  //TODO: right-button mouse dragging doesn't work in browser.
+  //Drag on an outer rim?
+  
+  flashMessage("drag" + mouseButton, 200);
+  if (mouseButton === RIGHT) {
+    if (!_isRightDragging) {
+      _wheels.forEach(function (w) { 
+        w.handleMouseStartRightDrag(new Pos(mouseX, mouseY));
+      });
+    } else {
+      _wheels.forEach(function (w) { 
+        w.handleMouseRightDraggedMore(new Pos(mouseX, mouseY));
+      });
+    }
+    _isRightDragging = true;
+  } else if (mouseButton == LEFT) {
+    if (!_isLeftDragging) {
+      _wheels.forEach(function (w) { 
+        w.handleMouseStartLeftDrag(new Pos(mouseX, mouseY));
+      });
+    } else {
+      _wheels.forEach(function (w) { 
+        w.handleMouseLeftDraggedMore(new Pos(mouseX, mouseY));
+      });
+    }
+    _isLeftDragging = true;
+  } else {
+    //centre button drag.
+  }
+}
+
 
 function pacifyJSHintByCallingP5Functions(){
   //there's probably a way to tell jshint that
