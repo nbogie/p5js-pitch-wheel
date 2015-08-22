@@ -158,6 +158,9 @@ function cullFlashMessages() {
 }
 
 function drawAndCullFlashMessages(x, y) {
+  if (_flashMsgs.length<1) {
+    return;
+  }  
   cullFlashMessages();
   push();
   textAlign(CENTER);
