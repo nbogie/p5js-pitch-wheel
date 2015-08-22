@@ -107,14 +107,14 @@ function drawHelpText(x,y) {
     var kvPairs = [
       { k:"Left-Click", v: "Add note"}, 
       { k:"Left-Drag", v: "Move note"}, 
-      { k:"Right-Drag", v: "Rotate chord under mouse"}, 
+      //{ k:"Right-Drag", v: "Rotate chord under mouse"}, 
       { k:"< >", v: "Rotate chords on all wheels"}, 
       { k:"z x", v: "Rotate chord to use (common) note under mouse"}, 
       { k:"- +", v: "Change size of wheel under mouse"}, 
       { k:"c", v: "Change to a new palette"}, 
-      { k:"s", v: "Shuffle the colours assignments from the current palette"}, 
+      //{ k:"s", v: "Shuffle the colours assignments from the current palette"}, 
       { k:"SPACE", v: "Clear wheel under mouse (or all) - PARTIAL IMPL"}, 
-      { k:"o", v: "Change next issued oscillator type"}, 
+      //{ k:"o", v: "Change next issued oscillator type"}, 
       { k:"h, ?", v: "Show or Hide this help text"}];
 
   var lines = kvPairs.map(function (pair){ return pair.k + " -> " + pair.v ;});
@@ -272,7 +272,6 @@ function mouseOrTouchDragged(x, y) {
   //TODO: right-button mouse dragging doesn't work in browser.
   //Drag on an outer rim?
 
-  flashMessage("drag.  btn:" + mouseButton, 200);
   if (mouseButton === RIGHT) {
     if (!_isRightDragging) {
       _wheels.forEach(function (w) { 
@@ -353,7 +352,8 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
   this.clear = function() {
     _noteOffQueue = [];
     _oscs.forEach(function(o) {
-      o.stop();
+      o.amp(0, 0.04);
+      window.setTimeout(function () { o.stop(); }, 50);
       //o.dispose();//TODO: dispose further of oscillators?
     }); 
     _oscs = [];
@@ -546,7 +546,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
   };
 
   this.rotatePlayingNotesFromTo = function(start, end) {
-    console.log("rotating playing notes from " + start + " to " +end+ " given numDivs=" + this.numDivs());
+    //console.log("rotating playing notes from " + start + " to " +end+ " given numDivs=" + this.numDivs());
     var newStates = _states.slice();
     newStates.mmRotate(start - end);
     this.clear();
@@ -575,8 +575,8 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
     }
     console.log(relPos + " -> polar radius:" + r +  ", theta(rads)" + polar.thetaRads() +  ", (degrees)" + polar.thetaDegrees());
     
-    console.log("playing notes: " + this.playingNotes());
-    console.log("RING: >>" + Pair.makeRing(this.playingNotes()) + "<<");
+    //console.log("playing notes: " + this.playingNotes());
+    //console.log("RING: >>" + Pair.makeRing(this.playingNotes()) + "<<");
   };
 
   //TODO: this should be handled on mousePressed.
@@ -736,10 +736,20 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
     //a simple env to fade in to the given target amplitude.
     //really we just want to avoid clicking.
     //flashMessage("amp: " + a.toPrecision(2), 500);
-    var env = new p5.Env(0.1, a, 60); //  makeEnv();
-    osc.amp(env);
+    //var env = new p5.Env(0.1, a, 60);
+    //We can't currently ramp in from 0 to targetAmp without using an env., 
+    //or without allowing some time to pass.  
+    //An envelope means we lose control of the amp for later fading, 
+    //so it's the latter.
+    //for example, we can't say: osc.amp(0); osc.amp(targetAmp, 0.1)
+    osc.amp(0);
+    window.setTimeout(function () { 
+      //TODO: careful, the osc may already have been disposed of in the future.
+      osc.amp(a, 0.05); 
+    }, 5);
+
     osc.start();
-    env.play();
+    //env.play();
     //NOTE: you can't do this - some time must pass or the previous osc.amp(0) setting will be forgotten and a starting vol of 0.5 will cause a click.
     //osc.amp(a, 3.0, 1);
     return osc;
@@ -750,7 +760,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
     var osc = this.makeOsc(f, 0.4);
     //hold onto the note in a list of oscillators AND a list of notes (oscs) to stop at some point in the future.
     _oscs.push(osc);
-    console.log("playing note: " + chunkIndex +" with durMs " + durMs);
+//    console.log("playing note: " + chunkIndex +" with durMs " + durMs);
     var stopTime;
     if (durMs === null) { 
       stopTime = null;
