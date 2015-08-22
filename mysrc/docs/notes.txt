@@ -40,3 +40,16 @@ Be careful of source-file concatenation which might lead to "use strict" being a
 * Keyboard commands don't work on a phone/tablet with no keyboard.
 
 * use var newArr = someArr.slice() to make a shallow clone.  Not splice()!
+
+* Object.keys[object].forEach(...)
+
+
+* function constructor(spec){
+    var that = other_constructor(spec), 
+        member, 
+        method = function () {
+          //spec, member, method
+        };
+    that.method = method;
+    return that;
+}
