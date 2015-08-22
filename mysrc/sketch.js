@@ -26,10 +26,15 @@ function makeOsc(f, a) {
   //a simple env to fade in to the given target amplitude.
   //really we just want to avoid clicking.
   //flashMessage("amp: " + a.toPrecision(2), 500);
-  var env = new p5.Env(2, a, 10); //  makeEnv();
-  osc.amp(env);
+  //var env = new p5.Env(2, a, 10); //  makeEnv();
+  //osc.amp(env);
+
+  osc.amp(0);
+  window.setTimeout(function () {
+    osc.amp(a, 0.5); 
+  }, 10);
   osc.start();
-  env.play();
+  //env.play();
   //NOTE: you can't do this - some time must pass or the previous osc.amp(0) setting will be forgotten and a starting vol of 0.5 will cause a click.
   //osc.amp(a, 3.0, 1);
   return osc;
@@ -88,7 +93,11 @@ function OscPlus(f, a, x, y) {
   };
   this.killOscSoftly = function () {
     this.osc.amp(0, 0.1);
-    this.osc.stop(0.15);
+    var heldOsc = this.osc;
+    window.setTimeout(function () { 
+      heldOsc.stop(); 
+    }, 50);
+    //this.osc.stop(0.15);
     this.osc = null;
   };
 }
@@ -152,7 +161,7 @@ function setupFirebase() {
 
   function handleNewMessage(snapshot) {
     var data = snapshot.val();
-    console.log("new message added to firebase...");
+    //console.log("new message added to firebase...");
     //flashMessage("new entry in db");
     //console.log(data)
   }
@@ -161,7 +170,6 @@ function setupFirebase() {
   //not currently doing anything meaningful
   messagesRef.limitToLast(10).on("child_added", handleNewMessage);
 }
-
 
 function loadSnapshotsFromDB() {
   messagesRef.once("value", function (everything) {
