@@ -44,7 +44,6 @@ var _drawPaletteNameUntil = 0;
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
-
   _schemes = new RingList(PaletteTools.makeSamplePalettes());
   _colorsGlobal = _schemes.current();
   _wheels = makeWheels();
@@ -60,10 +59,20 @@ function setup() {
 
 function makeWheels(){
   var ws = [];
-  //console.log(_colorsGlobal);
-  ws.push(new Wheel(1.25 * width / 4, height/2, height*0.175, 6, _colorsGlobal));
-  ws.push(new Wheel(2.75 * width / 4, height/2, height*0.35, 12, _colorsGlobal));  
-  //console.log(JSON.stringify(ws));
+  ws.push(new Wheel({ 
+    x: 1.25 * width / 4, 
+    y: height / 2, 
+    r: min(height, width) * 0.175, 
+    numDivs: 6, 
+    palette: _colorsGlobal
+  } ));
+  ws.push(new Wheel({
+    x: 2.75 * width / 4, 
+    y: height / 2, 
+    r: min(height, width) * 0.35, 
+    numDivs: 12, 
+    palette: _colorsGlobal
+  }));  
   return ws;
 }
 
@@ -317,20 +326,23 @@ function pacifyJSHintByCallingP5Functions(){
   }
 }
 
-var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
-  var _colors = gColors;
-
+/** 
+* current spec properties: 
+* x, y, r, numDivs, palette
+*/
+var Wheel = function (spec){ 
+  var _colors = spec.palette;
   var _noteOffQueue = [];
-  var _x = gX;
-  var _y = gY;
-  var _numDivs = gNumDivs;
-  var _outerCircleRad = gOutRadius; 
-  var _innerCircleRad = gOutRadius * 0.65;
+  var _x = spec.x;
+  var _y = spec.y;
+  var _numDivs = spec.numDivs;
+  var _outerCircleRad = spec.r; 
+  var _innerCircleRad = spec.r * 0.65;
   var _leftDragStartChunk = null;
   var _rightDragStartChunk = null;
   var _defaultNoteDuration = null;
   var that = this; //expose this in inner fns.  http://javascript.crockford.com/private.html
-
+  console.log(spec);
   //TODO: have the wheel be the interface and not know much about what it controls
   var _oscs = [];
   
