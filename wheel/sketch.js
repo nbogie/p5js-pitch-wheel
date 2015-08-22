@@ -103,12 +103,21 @@ function drawDebugText(x, y) {
 }
 
 function drawHelpText(x,y) {  
-  var lines = [
-  "SPACE - clear current config",
-  "'c' - randomise colors (within same palette)", 
-  "'h' - Show/Hide this help info",
-  ""
-  ];
+
+    var kvPairs = [
+      { k:"Left-Click", v: "Add note"}, 
+      { k:"Left-Drag", v: "Move note"}, 
+      { k:"Right-Drag", v: "Rotate chord under mouse"}, 
+      { k:"< >", v: "Rotate chords on all wheels"}, 
+      { k:"z x", v: "Rotate chord to use (common) note under mouse"}, 
+      { k:"- +", v: "Change size of wheel under mouse"}, 
+      { k:"c", v: "Change to a new palette"}, 
+      { k:"s", v: "Shuffle the colours assignments from the current palette"}, 
+      { k:"SPACE", v: "Clear wheel under mouse (or all) - PARTIAL IMPL"}, 
+      { k:"o", v: "Change next issued oscillator type"}, 
+      { k:"h, ?", v: "Show or Hide this help text"}];
+
+  var lines = kvPairs.map(function (pair){ return pair.k + " -> " + pair.v ;});
   push();
   textAlign(LEFT);
   drawTexts(lines, x, y);
@@ -121,8 +130,8 @@ function draw() {
   //drawOscPluses();
   _wheels.forEach(function(w) { w.draw();});
   if (_showHelpText) { 
-    drawHelpText(400,height - 250); 
-    drawDebugText(150,height - 150); 
+    drawHelpText(30,30); 
+    drawDebugText(30,height - 150); 
   } 
 
   drawAndCullFlashMessages(width/2, height/2);
