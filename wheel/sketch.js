@@ -192,7 +192,18 @@ function keyTyped() {
       w.rotatePlayingNotesFromTo(1, 0);
     } );
   }
-    
+
+  if (key === 'z') {
+    _wheels.forEach(function(w) { 
+      w.rotateChordWithCommonTone(RotationDir.DOWN, new Pos(mouseX, mouseY));
+    });
+  }
+
+  if (key === 'x') {
+    _wheels.forEach(function(w) { 
+      w.rotateChordWithCommonTone(RotationDir.UP, new Pos(mouseX, mouseY));
+    });
+  }
 
   if (key === '+' || key === '=') {
     remakeWheels(1);
@@ -509,6 +520,31 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
       };
   })();
 
+  this.rotateChordWithCommonTone = function(dir, p) {
+    var chunkIx = this.getChunkMaybe(this.relPos(p));
+    if (chunkIx !== null) {
+      if (dir === RotationDir.UP) {
+        var nextLowerM = this.nextLowerPlayingChunkIx(chunkIx);
+        if (nextLowerM !== null) {
+          this.rotatePlayingNotesFromTo(nextLowerM, chunkIx);
+        }
+      } else {
+        var nextHigherM = this.nextHigherPlayingChunkIx(chunkIx);
+        if (nextHigherM !== null) {
+          this.rotatePlayingNotesFromTo(nextHigherM, chunkIx);
+        }
+      }
+    }
+  };
+
+  this.nextHigherPlayingChunkIx = function(fromIx) {
+    return Utils.nextHigherNumberInRing(this.playingNotes(), fromIx);
+  };
+
+  this.nextLowerPlayingChunkIx = function (fromIx) {
+    return Utils.nextLowerNumberInRing(this.playingNotes(), fromIx);
+  };
+
   this.rotatePlayingNotesFromTo = function(start, end) {
     console.log("rotating playing notes from " + start + " to " +end+ " given numDivs=" + this.numDivs());
     var newStates = _states.slice();
@@ -737,6 +773,45 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
 var Utils = {
   within: function (v, minV, maxV) {
     return (v >= minV && v <= maxV);
+  },
+
+  //scared to modify the Array prototype
+  last: function (arr) {
+    return arr[arr.length - 1];
+  },
+
+  nextLowerNumberInRing: function (list, bar) {
+    if (list.length < 1) {
+      return null;
+    }
+    var nextLowest = null;
+    list.forEach(function(c){
+      if (c < bar) {
+        nextLowest = c;
+      }      
+    });
+    if (nextLowest === null) {
+      nextLowest = Utils.last(list);
+    }
+    return nextLowest;
+  },
+
+  //TODO: re-impl using existing JS fns
+  nextHigherNumberInRing: function (list, bar) {
+    if (list.length < 1) {
+      return null;
+    }
+    var revList = list.reverse(); 
+    var nextHigher = null;
+    revList.forEach(function(c){
+      if (c > bar) {
+        nextHigher = c;
+      }
+    });
+    if (nextHigher === null) {
+      nextHigher = list[0];
+    }
+    return nextHigher;
   }
 };
 
@@ -802,7 +877,7 @@ Pair.makeRing = function(ns){
     return res;
   } 
   var first = ns[0];
-  var prev = ns[ns.length - 1];
+  var prev = Utils.last(ns);
 
   for (var i = 0; i < ns.length-1; i++)
   {
@@ -812,7 +887,7 @@ Pair.makeRing = function(ns){
     prev = curr;
   }
 
-  res.push(new Pair(ns[ns.length -1], prev, first)); 
+  res.push(new Pair(Utils.last(ns), prev, first)); 
   return res;
 };
 
@@ -990,3 +1065,5 @@ var PaletteTools = {
     return this.current();
   };
 };  // END fn RingList
+
+var RotationDir = { UP: "up", DOWN: "down" };
