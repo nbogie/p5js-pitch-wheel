@@ -242,7 +242,7 @@ function mouseOrTouchDragged(x, y) {
   //TODO: right-button mouse dragging doesn't work in browser.
   //Drag on an outer rim?
 
-  flashMessage("drag" + mouseButton, 200);
+  flashMessage("drag.  btn:" + mouseButton, 200);
   if (mouseButton === RIGHT) {
     if (!_isRightDragging) {
       _wheels.forEach(function (w) { 
@@ -413,7 +413,6 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
       stopAngle = startAngle + delta;
       noStroke();
       arc(x, y, arcR, arcR, startAngle, stopAngle);
-      text(JSON.stringify(_states), 40,40);
       if (_states[i] === "playing") {
         fill(c3);
         var marginAngle = 0;// 0.025; //0.0
@@ -521,6 +520,9 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
 
   this.handleMouseStartLeftDrag = function (absPos) {
     _leftDragStartChunk = null;
+    
+    flashMessage("wheel handling left drag start");
+    
     var chunkIx = this.getChunkMaybe(this.relPos(absPos));
     if (chunkIx !== null) {
 
@@ -587,7 +589,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
     var newQueue = [];
     _noteOffQueue.forEach(function(noteOff) {
       if (noteOff.isForChunk(chunkIx)) {
-        this.stopNote(noteOff);
+        that.stopNote(noteOff);
         console.log("stopping note for chunk : " + chunkIx);
       } else {
         newQueue.push(noteOff);
@@ -647,7 +649,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
     //a simple env to fade in to the given target amplitude.
     //really we just want to avoid clicking.
     //flashMessage("amp: " + a.toPrecision(2), 500);
-    var env = new p5.Env(1, a, 20); //  makeEnv();
+    var env = new p5.Env(0.1, a, 60); //  makeEnv();
     osc.amp(env);
     osc.start();
     env.play();
