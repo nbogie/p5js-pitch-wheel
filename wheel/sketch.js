@@ -1054,7 +1054,6 @@ var PaletteTools = {
     PaletteTools.makePalette(1098589, "coup de grâce", ["99B898", "FECEA8", "FF847C", "E84A5F", "2A363B"]), 
     PaletteTools.makePalette(678929, "War", ["230F2B", "F21D41", "EBEBBC", "BCE3C5", "82B3AE"]), 
     PaletteTools.makePalette(482416, "Wasabi Suicide", ["FF4242", "F4FAD2", "D4EE5E", "E1EDB9", "F0F2EB"]), 
-    PaletteTools.makePalette(845564, "it's raining love", ["A3A948", "EDB92E", "F85931", "CE1836", "009989"]), 
     PaletteTools.makePalette(444487, "Curiosity Killed", ["EFFFCD", "DCE9BE", "555152", "2E2633", "99173C"]) 
     ];
   }
