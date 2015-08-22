@@ -112,7 +112,7 @@ function drawHelpText(x,y) {
       { k:"z x", v: "Rotate chord to use (common) note under mouse"}, 
       { k:"- +", v: "Change size of wheel under mouse"}, 
       { k:"c", v: "Change to a new palette"}, 
-      //{ k:"s", v: "Shuffle the colours assignments from the current palette"}, 
+      { k:"s", v: "Shuffle the colours assignments from the current palette"}, 
       { k:"SPACE", v: "Clear wheel under mouse (or all) - PARTIAL IMPL"}, 
       //{ k:"o", v: "Change next issued oscillator type"}, 
       { k:"h, ?", v: "Show or Hide this help text"}];
@@ -757,7 +757,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
 
   this.playNote = function(chunkIndex, durMs) {
     var f = this.freqForChunk(chunkIndex);
-    var osc = this.makeOsc(f, 0.4);
+    var osc = this.makeOsc(f, 0.2);
     //hold onto the note in a list of oscillators AND a list of notes (oscs) to stop at some point in the future.
     _oscs.push(osc);
 //    console.log("playing note: " + chunkIndex +" with durMs " + durMs);
@@ -783,6 +783,12 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
 var Utils = {
   within: function (v, minV, maxV) {
     return (v >= minV && v <= maxV);
+  },
+  
+  //http://stackoverflow.com/questions/6274339/how-can-i-shuffle-an-array-in-javascript
+  shuffleMod: function (o){
+    for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+    return o;
   },
 
   //scared to modify the Array prototype
@@ -1001,10 +1007,8 @@ var Palette = function (n, title, cs) {
   };
 
   this.shuffleSelf = function() {
-    //TODO: impl
-    //Collections.shuffle(_cs);
+    Utils.shuffleMod(_cs);
   };
-
 
 };//END fn Palette
 
