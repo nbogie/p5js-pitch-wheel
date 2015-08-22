@@ -61,7 +61,7 @@ function setup() {
 function makeWheels(){
   var ws = [];
   //console.log(_colorsGlobal);
-  //ws.push(new Wheel(1.25 * width / 4, height/2, height*0.175, 6, _colorsGlobal));
+  ws.push(new Wheel(1.25 * width / 4, height/2, height*0.175, 6, _colorsGlobal));
   ws.push(new Wheel(2.75 * width / 4, height/2, height*0.35, 12, _colorsGlobal));  
   //console.log(JSON.stringify(ws));
   return ws;
