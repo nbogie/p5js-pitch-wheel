@@ -48,7 +48,6 @@ function setup() {
   _schemes = new RingList(PaletteTools.makeSamplePalettes());
   _colorsGlobal = _schemes.current();
   _wheels = makeWheels();
-  console.log("wheels is now: " + _wheels);
   _snapshots = [];
   _flashMsgs = [];
   _showHelpText = false;
@@ -508,6 +507,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
           splice = Array.prototype.splice;
 
       return function(count) {
+          //console.log("rotating " + this + " by " + count);
           var len = this.length >>> 0, // convert to uint
               count = count >> 0; // convert to int
 
@@ -516,6 +516,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
 
           // use splice.call() instead of this.splice() to make function generic
           push.apply(this, splice.call(this, 0, count));
+          //console.log("yields " + this);
           return this;
       };
   })();
@@ -573,7 +574,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
       this.playNote(which, _defaultNoteDuration);
       _states[which] = "playing";
     }
-    console.log(relPos + " -> polar radius:" + r +  ", theta(rads)" + polar.thetaRads() +  ", (degrees)" + polar.thetaDegrees());
+    //console.log(relPos + " -> polar radius:" + r +  ", theta(rads)" + polar.thetaRads() +  ", (degrees)" + polar.thetaDegrees());
     
     //console.log("playing notes: " + this.playingNotes());
     //console.log("RING: >>" + Pair.makeRing(this.playingNotes()) + "<<");
@@ -614,7 +615,7 @@ var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
     if (chunkIx !== null) {
 
       if (this.isChunkPlaying(chunkIx)) {
-        console.log("started left-dragging in chunk #" + chunkIx);
+        //console.log("started left-dragging in chunk #" + chunkIx);
         _leftDragStartChunk = chunkIx;
       } else {
         //console.log("chunk not playing: "+chunkIx);
@@ -817,7 +818,7 @@ var Utils = {
     if (list.length < 1) {
       return null;
     }
-    var revList = list.reverse(); 
+    var revList = list.slice().reverse();
     var nextHigher = null;
     revList.forEach(function(c){
       if (c > bar) {
@@ -1022,7 +1023,7 @@ var PaletteTools = {
   }, 
 
   makePaletteRGB: function(n, title, cs) {
-    console.log("cs given: " + cs + ' for title ' + title + " and n " + n);
+    //console.log("cs given: " + cs + ' for title ' + title + " and n " + n);
     return new Palette(n, title, cs);
   }, 
 
