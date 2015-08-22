@@ -38,3 +38,5 @@ Be careful of source-file concatenation which might lead to "use strict" being a
 * Mouse-left and Right button stuff doesn't fit with touch.  (unless we say two-finger drag is equivalent to right-button drag.)
 
 * Keyboard commands don't work on a phone/tablet with no keyboard.
+
+* use var newArr = someArr.slice() to make a shallow clone.  Not splice()!

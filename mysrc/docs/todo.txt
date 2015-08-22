@@ -27,4 +27,4 @@ TODO
 
 * x,y values restored from a snapshot are specific to the window dimensions under which they were snapshotted, and do not reflect how high or low a pitch really is.  If the window had height 100, a bass note might be y: 90, but this is very high up when restored on an 800px window.  snapshot should save x and y as fractional values, from 0 to 1.
 
-* fix bug in circle interface where rotate through common tone will note rotate (with 'z') when you hover over any chunk higher than the 4th(?) one (likely the underlying array splice impl. isn't doing wrapping.  Unit tests!)
+* allow anyone to enter a colourlovers url and have the ui take on that palette (so they can build their palettes with those tools). they should also be able to capture an output string representing the palette and its assignments, once they've finished shuffling to fit.
