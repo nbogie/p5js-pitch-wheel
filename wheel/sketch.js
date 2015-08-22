@@ -61,10 +61,10 @@ function setup() {
 
 function makeWheels(){
   var ws = [];
-  console.log(_colorsGlobal);
-  ws.push(new Wheel(1.25 * width / 4, height/2, height*0.175, 6, _colorsGlobal));
+  //console.log(_colorsGlobal);
+  //ws.push(new Wheel(1.25 * width / 4, height/2, height*0.175, 6, _colorsGlobal));
   ws.push(new Wheel(2.75 * width / 4, height/2, height*0.35, 12, _colorsGlobal));  
-  console.log(JSON.stringify(ws));
+  //console.log(JSON.stringify(ws));
   return ws;
 }
 
@@ -163,7 +163,7 @@ function keyTyped() {
   }
 
   if (key===" ") {
-    //TODO: clear
+    _wheels.forEach(function(w){ w.clear(); });    
   }
 
   function remakeWheels(sizeOffset) {
@@ -228,11 +228,9 @@ function mouseOrTouchEnded() {
 
 function mouseOrTouchStarted(x, y) {
   flashMessage("mouse/touch started " + [x, y], 500);
-/**
-  for (Wheel w : _wheels) {
+  _wheels.forEach(function(w){ 
     w.handleMouseClicked(new Pos(mouseX, mouseY));
-  }
-  */
+  });
 }
 
 //just recognition of button and start / continued drag, 
@@ -243,7 +241,7 @@ function mouseOrTouchDragged(x, y) {
   
   //TODO: right-button mouse dragging doesn't work in browser.
   //Drag on an outer rim?
-  
+
   flashMessage("drag" + mouseButton, 200);
   if (mouseButton === RIGHT) {
     if (!_isRightDragging) {
@@ -279,7 +277,7 @@ function pacifyJSHintByCallingP5Functions(){
   if (false){
     setup();
     draw();
-    mouseClicked();
+    //mouseClicked();
     mousePressed();
     mouseReleased();
     mouseDragged();
@@ -291,15 +289,15 @@ function pacifyJSHintByCallingP5Functions(){
   }
 }
 
-var Wheel = function(x, y, outRadius, numDivs, colrs){
-  var _colors = colrs;
+var Wheel = function(gX, gY, gOutRadius, gNumDivs, gColors){
+  var _colors = gColors;
 
   var _noteOffQueue = [];
-  var _x = x;
-  var _y = y;
-  var _numDivs = numDivs;
-  var _outerCircleRad = outRadius; 
-  var _innerCircleRad = outRadius * 0.65;
+  var _x = gX;
+  var _y = gY;
+  var _numDivs = gNumDivs;
+  var _outerCircleRad = gOutRadius; 
+  var _innerCircleRad = gOutRadius * 0.65;
   var _leftDragStartChunk = null;
   var _rightDragStartChunk = null;
   var _defaultNoteDuration = null;
@@ -330,6 +328,7 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
     }); 
     _oscs = [];
     _states = this.makeInitialPlayStates();
+    flashMessage("cleared all", 1000);
   };
 
 
@@ -409,18 +408,13 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
     for (var i=0; i < numDivs; i++)
     {
       var cs = [c1, c2, c3];
-      var cChunk = cs[i%2]; 
+      var cChunk = cs[i%2];
       fill(cChunk);
-
       stopAngle = startAngle + delta;
       noStroke();
       arc(x, y, arcR, arcR, startAngle, stopAngle);
-      
-      _states[3] = "playing";
-      _states[5] = "playing";
-      _states[9] = "playing";
-      
-      if (_states[0] === "playing") {
+      text(JSON.stringify(_states), 40,40);
+      if (_states[i] === "playing") {
         fill(c3);
         var marginAngle = 0;// 0.025; //0.0
         var highlightR = arcR;
@@ -442,7 +436,7 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
     return (chunkIx !== null);
   };
   this.getClockThetaForChunkIndex = function(chunkIndex) {
-    var chunkHalfWidth = PI / _numDivs;
+    var chunkHalfWidth = PI / this.numDivs();
     return (chunkIndex * chunkHalfWidth * 2) + chunkHalfWidth;
   };
 
@@ -456,9 +450,6 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
       res = res - TWO_PI;
     }
     return res - PI/2;
-  };
-  this.handleMouseMoved = function(absPos) {
-    this.reportPosition(absPos, this.relPos(absPos));
   };
   this.reportPosition = function(absPos, relPos){
     var polar = relPos.toPolar();
@@ -482,8 +473,12 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
     return(_states[chunkIx] === "playing");
   };
 
+  this.handleMouseMoved = function(absPos) {
+    this.reportPosition(absPos, this.relPos(absPos));
+  };
+
   this.handleMouseClicked = function(absPos) {
-    var relPos = relPos(absPos);
+    var relPos = this.relPos(absPos);
     _clickPosns.push(absPos);
     var polar = relPos.toPolar();
     var r = polar.radius();
@@ -492,10 +487,70 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
       this.playNote(which, _defaultNoteDuration);
       _states[which] = "playing";
     }
-    console.log(relPos + " -> " + r +  ", theta(rads)" + polar.thetaRads() +  ", (degrees)" + polar.thetaDegrees());
-    console.log("RING: " + Pair.makeRing(this.playingNotes()));
+    console.log(relPos + " -> polar radius:" + r +  ", theta(rads)" + polar.thetaRads() +  ", (degrees)" + polar.thetaDegrees());
+    
+    console.log("playing notes: " + this.playingNotes());
+    console.log("RING: >>" + Pair.makeRing(this.playingNotes()) + "<<");
   };
 
+  //TODO: this should be handled on mousePressed.
+  this.handleMouseStartRightDrag = function (absPos) {
+    _rightDragStartChunk = null;
+    var chunkIx = this.getChunkMaybe(this.relPos(absPos));
+    if (chunkIx !== null) {
+      console.log("started right-dragging in chunk #" + chunkIx);
+      _rightDragStartChunk = chunkIx;
+    }
+  };
+
+  this.handleMouseRightDraggedMore = function (absPos) {
+    var relPos = absPos.offsetNew(- _x, - _y);
+    var chunkIx = this.getChunkMaybe(relPos);
+    //console.log(String.format("testing mdr. chunk now is %d, and rdsc is: %d", chunkIx, _rightDragStartChunk));
+    if (chunkIx !== null) {
+      if (_rightDragStartChunk !== null) {
+        if (_rightDragStartChunk == chunkIx) {
+          //we haven't dragged past a chunk yet.
+        } else {
+          this.rotatePlayingNotesFromTo(_rightDragStartChunk, chunkIx);
+          _rightDragStartChunk = chunkIx;
+        }
+      }
+    }
+  };
+
+  this.handleMouseStartLeftDrag = function (absPos) {
+    _leftDragStartChunk = null;
+    var chunkIx = this.getChunkMaybe(this.relPos(absPos));
+    if (chunkIx !== null) {
+
+      if (this.isChunkPlaying(chunkIx)) {
+        console.log("started left-dragging in chunk #" + chunkIx);
+        _leftDragStartChunk = chunkIx;
+      } else {
+        //console.log("chunk not playing: "+chunkIx);
+      }
+    }
+  };
+
+  this.handleMouseLeftDraggedMore = function (absPos) {
+    var chunkIx = this.getChunkMaybe(this.relPos(absPos));
+    if (chunkIx !== null) {
+      if (_leftDragStartChunk !== null) {
+        if (_leftDragStartChunk !== chunkIx) {
+          this.stopNotesForChunk(_leftDragStartChunk);
+          this.playNote(chunkIx, null);
+          _states[chunkIx] = "playing";
+          _leftDragStartChunk = chunkIx;
+          //TODO: find the osc in the queued noteoffs for this chunk, and kill it
+          // re-add a new note off for the new chunk.
+        }
+      }
+    }
+    //TODO: update the ring?
+    //console.log(relPos + " -> " + r +  ", theta(rads)" + polar.thetaRads() +  ", (degrees)" + polar.thetaDegrees());
+    //console.log("RING: " + makeRing(playingNotes()));
+  };
 
   this.centreOfChunkAbsoluteCart = function(i) {
     var ctr = this.centreOfChunk(i).toCartesian();
@@ -521,8 +576,8 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
   };
 
   this.whichChunk = function(theta) {
-    var res = floor(((theta) / TWO_PI) * _numDivs);
-    if (res < 0 || res >= numDivs()) {
+    var res = floor(((theta) / TWO_PI) * this.numDivs());
+    if (res < 0 || res >= this.numDivs()) {
       //throw new RuntimeException("Bad chunk index generated "+res+ " in conversion from theta "+theta);
     }
     return res;
@@ -577,46 +632,59 @@ var Wheel = function(x, y, outRadius, numDivs, colrs){
   };
   this.queueNoteOff = function(chunkIndex, osc, time) {
     var nOff = new NoteOff(chunkIndex, osc, time);
-    _noteOffQueue.add(nOff);
+    _noteOffQueue.push(nOff);
   };
 
   this.playRandomNote = function(durMs) {
-    var ri = random(numDivs());
+    var ri = random(this.numDivs());
     this.playNote(ri, durMs);
+  };
+
+  this.makeOsc = function (f, a) {
+    var osc = new p5.Oscillator();
+    osc.setType('sine');
+    osc.freq(f, 0.05);
+    //a simple env to fade in to the given target amplitude.
+    //really we just want to avoid clicking.
+    //flashMessage("amp: " + a.toPrecision(2), 500);
+    var env = new p5.Env(1, a, 20); //  makeEnv();
+    osc.amp(env);
+    osc.start();
+    env.play();
+    //NOTE: you can't do this - some time must pass or the previous osc.amp(0) setting will be forgotten and a starting vol of 0.5 will cause a click.
+    //osc.amp(a, 3.0, 1);
+    return osc;
   };
 
   this.playNote = function(chunkIndex, durMs) {
     var f = this.freqForChunk(chunkIndex);
-    var osc = _oscFactory.createOscillator();
-
-    osc.freq(f);
-    osc.amp(0.2);//_nextAmp);
-osc.play();
-_oscs.add(osc);
-console.log("playing note: " + chunkIndex +" with durMs " + durMs);
-var stopTime;
-if (durMs === null) { 
-  stopTime = null;
-} else { 
-  stopTime = millis() + durMs;
-}
-this.queueNoteOff(chunkIndex, osc, stopTime);
-};
+    var osc = this.makeOsc(f, 0.4);
+    //hold onto the note in a list of oscillators AND a list of notes (oscs) to stop at some point in the future.
+    _oscs.push(osc);
+    console.log("playing note: " + chunkIndex +" with durMs " + durMs);
+    var stopTime;
+    if (durMs === null) { 
+      stopTime = null;
+    } else { 
+      stopTime = millis() + durMs;
+    }
+    this.queueNoteOff(chunkIndex, osc, stopTime);
+  };
 
 
-this.isUnderMouse = function(p) {
-  var dist = (new Pos(_x, _y)).distTo(p);
-  return (dist <= _outerCircleRad);
-};
+  this.isUnderMouse = function(p) {
+    var d = (new Pos(_x, _y)).distTo(p);
+    return (d <= _outerCircleRad);
+  };
 
 
 
 }; //ENDS Wheel
 
-var Utils = function() {
-  this.within = function(v, minV, maxV){
+var Utils = {
+  within: function (v, minV, maxV) {
     return (v >= minV && v <= maxV);
-  };
+  }
 };
 
 var Polar = function(r, theta) {
@@ -687,7 +755,7 @@ Pair.makeRing = function(ns){
   {
     var curr = ns[i];
     var next = ns[i+1];    
-    res.push(new Pair(curr, prev, next)); // TODO: check push is to end.
+    res.push(new Pair(curr, prev, next));
     prev = curr;
   }
 
@@ -711,7 +779,7 @@ var NoteOff = function(chunkIndex, osc, time) {
     return _osc;
   };
   this.isForChunk = function(i) {
-    return chunkIndex() === i;
+    return _chunkIndex === i;
   };
 
   this.expired = function(timeNow) {
@@ -730,10 +798,8 @@ var Pos = function(x, y) {
   var _x = x;
   var _y = y;
   
-  this.distTo = function(other) {
-    var dX = other.x() - x();
-    var dY = other.y() - y();
-    return Math.sqrt(dX*dX + dY*dY);
+  this.distTo = function (other) {
+    return dist(_x, _y, other.x(), other.y());
   };
   this.offsetNew = function(oX, oY) {
     return new Pos(_x + oX, _y + oY);
@@ -750,8 +816,8 @@ var Pos = function(x, y) {
 
   this.toPolar = function() {
     //theta will be in the range -PI to PI, with positive Y (down) meaning positive theta.
-    var r = sqrt(x()*x() + y()*y());
-    var theta = atan2(y(), x());  //NOT atan, that loses info
+    var r = mag(_x,_y);
+    var theta = atan2(_y, _x);  //NOT atan, that loses info
     return new Polar(r, theta);
   };
 };//END fn POS
@@ -854,7 +920,7 @@ var PaletteTools = {
 /** An ordered collection of which we can either:
  *   - ask for the current element, or 
  *   - advance to the next one. **/ 
-var RingList = function(items) {
+ var RingList = function(items) {
   var _i = 0;
   var _items = items;
   
