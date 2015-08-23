@@ -19,9 +19,6 @@
  * FIX: when dragging notes, it's possible to delete one's own note from known-about notes (when I think dragging over same chunk) but then be left what that note still sounding.
  */
 
-
- var oscPluses;
-
  var _wheels;
  var _bgColor;
  var _snapshots;
@@ -38,12 +35,16 @@ var _schemes;
 var _colorsGlobal;
 
 var _drawPaletteNameUntil = 0;
+var _showWaveform;
+var _waveformColor;
+var _fft;
 
 
 
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
+  _fft = new p5.FFT();
   _schemes = new RingList(PaletteTools.makeSamplePalettes());
   _colorsGlobal = _schemes.current();
   _wheels = makeWheels();
@@ -53,7 +54,8 @@ function setup() {
   //randomiseColors();
   _clickPosns = [];
   _bgColor = color(100);//lets us see we've reloaded page
-
+  _showWaveform = true;
+  _waveformColor = _colorsGlobal.getAny();
 }
 
 
@@ -135,17 +137,43 @@ function drawHelpText(x,y) {
 function draw() {
   background(_bgColor);
 
-  //drawOscPluses();
+  if (_showWaveform) {
+    drawFFTWaveform();
+  }
+
   _wheels.forEach(function(w) { w.draw();});
+
   if (_showHelpText) { 
     drawHelpText(30,30); 
     drawDebugText(30,height - 150); 
   } 
-
   drawAndCullFlashMessages(width/2, height/2);
   //  runScheduledStuff();
 
 }
+
+function drawFFTWaveform() {
+  var waveform = _fft.waveform();
+  drawWaveform(waveform);
+}
+
+function drawWaveform(waveform) {
+  push();
+  noFill();
+  beginShape();
+  
+  stroke(_waveformColor);
+  strokeWeight(1);
+  for (var i = 0; i < waveform.length; i++) {
+    var x = map(i, 0, waveform.length, 0, width);
+    var y = map( waveform[i], -1, 1, 0, height);
+    vertex(x,y);
+  }
+  endShape();
+  pop();
+}
+
+
 
 function cullFlashMessages() {
   if (_flashMsgs.length<1) {
@@ -225,12 +253,17 @@ function keyTyped() {
   
   if (key == 'c') {
     _colorsGlobal = _schemes.change();
+    _waveformColor = _colorsGlobal.getAny();
     _wheels.forEach(function(w) { w.setColors(_colorsGlobal); } );
     flashMessage("Palette: "+_colorsGlobal.title(), 1000);
   }
 
   if (key == 's') {
     _colorsGlobal.shuffleSelf();
+  }
+
+  if (key==="w") {
+    _showWaveform = ! _showWaveform;
   }
 
 }
@@ -386,7 +419,7 @@ var Wheel = function (spec){
       return this;
     }
 
-    return new Wheel(_x, _y, _outerCircleRad, n, _colors);
+    return new Wheel({x: _x, y: _y, r: _outerCircleRad, numDivs: n, palette: _colors});
   };
 
 
@@ -1021,6 +1054,10 @@ var Palette = function (n, title, cs) {
   
   this.get = function(i) {
     return _cs[i];
+  };
+
+  this.getAny = function() {
+    return choose(_cs);
   };
 
   this.shuffleSelf = function() {
