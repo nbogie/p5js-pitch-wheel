@@ -53,3 +53,6 @@ Be careful of source-file concatenation which might lead to "use strict" being a
     that.method = method;
     return that;
 }
+
+* favourite chord: 0 4 7 11 14 16 19, rotated on ? 14?
+* favourite chord: C G C D G, rotated on the middle C
