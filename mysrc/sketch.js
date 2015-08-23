@@ -444,10 +444,10 @@ function drawGridFor(osc, withNumbers) {
   push();
   noStroke();
   fill(0);
-  series.forEach(function (elem, i) { 
+  series.forEach(function (elem, i, arr) { 
     if (withNumbers) {
-      text(elem.desc, elem.x+5, constrain(osc.y-(i*10), 15, height - 30));
-      text(fToText(elem.f), elem.x+5, constrain(osc.y+20+(i*10), 30, height - 15));
+      text(elem.desc,       elem.x + 5, constrain(osc.y - 4 -  ((arr.length - i -1) * 10), 15, height - 30));
+      text(fToText(elem.f), elem.x + 5, constrain(osc.y + 16 + ((arr.length - i -1) * 10), 30, height - 15));
     }
   });
   pop();
