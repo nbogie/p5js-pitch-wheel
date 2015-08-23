@@ -1,10 +1,13 @@
 "use strict";
+var follow;
+var bass;
+var sampler;
 
 // move your mouse in the window to change audiovisuals
 function setup() {
   createCanvas( windowWidth, windowHeight )
 
-  drums = EDrums( 'x*o*x*o-' )
+  var drums = EDrums( 'x*o*x*o-' )
 
   sampler = Sampler().record( drums, 1 )
     .note.seq( [.25,.5,1,2].rnd(), [1/4,1/8,1/2].rnd() )
