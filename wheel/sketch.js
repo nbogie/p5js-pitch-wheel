@@ -38,6 +38,8 @@ var _drawPaletteNameUntil = 0;
 var _showWaveform;
 var _waveformColor;
 var _fft;
+var _drums;
+var _drumFollow;
 
 
 
@@ -54,8 +56,9 @@ function setup() {
   //randomiseColors();
   _clickPosns = [];
   _bgColor = color(100);//lets us see we've reloaded page
-  _showWaveform = true;
+  _showWaveform = false;
   _waveformColor = _colorsGlobal.getAny();
+  _drums;
 }
 
 
@@ -136,7 +139,6 @@ function drawHelpText(x,y) {
 }
 function draw() {
   background(_bgColor);
-
   if (_showWaveform) {
     drawFFTWaveform();
   }
@@ -262,11 +264,25 @@ function keyTyped() {
     _colorsGlobal.shuffleSelf();
   }
 
+
+  if (key == 'P') {
+    _drums.stop();
+  }
+  if (key == 'p') {
+    var w = Utils.last(_wheels);
+    var ptn = w.makeDrumPatternFromPlayingNotes();
+    console.log(ptn);
+    var samplePtn = 'x*oxx*o-.---';
+    _drums = EDrums(ptn);
+  }
+
+
   if (key==="w") {
     _showWaveform = ! _showWaveform;
   }
 
 }
+
 
 function touchMoved() {
   mouseOrTouchDragged(touchX, touchY);
@@ -405,8 +421,15 @@ var Wheel = function (spec){
     _oscs = [];
     _states = this.makeInitialPlayStates();
   };
-
-
+  //http://charlie-roberts.com/gibber/drums/
+  this.makeDrumPatternFromPlayingNotes = function () {
+    return _states.map(function (s) { 
+      if (s === "playing") {
+        return "x";
+      } else {
+        return ".";
+      }}).join('');
+  };
 
   this.remake = function(n) {
     this.clear();
