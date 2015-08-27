@@ -34,3 +34,5 @@ var walkdownCtrl = wheel.makeWalkdown()
 walkdownCtrl.step()
 walkdownCtrl.step()
 For any chord this step it down one note at a time.  (it has state - the last note moved of the chord).
+
+* try the solarized palette: http://ethanschoonover.com/solarized#features
