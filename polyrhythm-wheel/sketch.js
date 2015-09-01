@@ -1,6 +1,17 @@
 "use strict";
+//TODO: user control of BPM
+//TODO: trigger (schedule) drum sounds / beeps
+//TODO: trigger (optional) a bigger sound at the cycle start.
+
 var colors;
 var bgColor;
+var frameNum;
+var times;
+
+var part;
+
+var sounds;
+
 
 
 var colors = {
@@ -23,9 +34,77 @@ var colors = {
 };
 
 
+
+
+function Times() {
+  var times = [3, 4];
+  var next = 0;
+  
+  this.setNext = function (n){
+    times[next] = n;
+    next = (next + 1) % times.length;
+  };
+  
+  this.getTimes = function () {
+    return times.slice();
+  };
+  this.getTimesAsVsString = function () {
+    return this.getTimes().map(function(n) { return n.toString(); }).join(" vs ");
+  };
+}
+
 function setup() {
+  sounds = [loadSound('sounds/hihat.mp3'), loadSound('sounds/snare.mp3')];
+
+  frameNum = 0;
+  times = new Times();
   createCanvas(windowWidth, windowHeight);
   bgColor = color(100);//lets us see we've reloaded page
+  
+  part = new p5.Part();
+  part.setBPM(30);
+  recreatePhrasesForTimes(part, times.getTimes());
+  window.setTimeout(function () {
+    part.loop();    
+  }, 2000);
+
+}
+
+function makePattern(n) {
+  var res = [];
+  for(var i = 0; i < n; i++) {
+    res.push(1);
+  }
+  return res;
+}
+
+function makeSound0(){
+  makeSound(0);  
+}
+
+function makeSound(n){
+  sounds[n].rate(1);
+  sounds[n].play();
+}
+
+function makeSound1(){
+  makeSound(1);
+}
+
+function removeAllPhrasesFromPart(p) {
+  for(var i=0 ; i < 10; i++) {
+    p.removePhrase('phrase' + i);
+  }
+}
+
+function recreatePhrasesForTimes(p, ts) {
+  removeAllPhrasesFromPart(p);
+  ts.forEach(function(n, i) {  
+    var ptn = makePattern(n);
+    console.log("ptn: " + ptn);
+    var fn = (i % 2 === 0 ) ? makeSound0 : makeSound1;
+    p.addPhrase(new p5.Phrase('phrase'+i, fn, ptn));
+  });
 }
 
 function choose(list) {
@@ -58,31 +137,53 @@ function drawPalette(w, h){
 
   palette.forEach(function(arr, i) { 
     fill(arr[1]);
-    var y = i * h*2 / palette.length;
-    var depth = h*2 / palette.length;
-    rect(0, y, w*2, depth);
+    var y = i * h * 2 / palette.length;
+    var depth = h * 2 / palette.length;
+    rect(0, y, w * 2, depth);
     fill(0);
-    text(arr[0], w, y+depth/2);
+    text(arr[0], w, y + depth/2);
   });
 }
 
 function draw() {
+  frameNum++;
+  if (frameNum >= 360) {
+    frameNum = 0;
+  }
   background(colors.base2);
   drawPalette(width/5, height/5);
   var x = width/2;
   var y = height/2;
   var r = min(width/2, height/2);
   var rInner = r * 0.65;
+
   fill(colors.base00);
-  ellipse(x, y, r*2, r*2);
+  ellipse(x, y, r * 2, r * 2);
   fill(colors.base2);
-  ellipse(x, y, rInner*2, rInner*2);
+  ellipse(x, y, rInner * 2, rInner * 2);
   stroke(colors.magenta);
   strokeWeight(3);
-  drawLinesSplittingInto(5, x, y, r);
+  drawLinesSplittingInto(times.getTimes()[0], x, y, r);
   strokeWeight(2);
   stroke(colors.violet);
-  drawLinesSplittingInto(4, x, y, r);
+  drawLinesSplittingInto(times.getTimes()[1], x, y, r);
+
+  //TODO: track elapsed time since last draw, and use that delta 
+  //to decide how far the timer's progressed.
+  drawTimerLine(x, y, frameNum, r);
+
+  fill(0);
+  textAlign(CENTER);
+  textSize(22);
+  text(times.getTimesAsVsString(), x + 60, y - 40);
+}
+
+function drawTimerLine(x, y, deg, r){
+  strokeWeight(5);
+  stroke(colors.base3);
+
+  var p = polarToCart(r, deg/360 * TWO_PI);
+  line(x, y, x+p.x, y+p.y);
 }
 
 function polarToCart(r, angle){
@@ -96,7 +197,7 @@ function drawLinesSplittingInto(n, x, y, r){
   for (var i=0; i <n; i++) {
     var angle = i * angleDeltaRadians;    
     var p = polarToCart(r, angle);
-    line(x, y, x+p.x, y+p.y);
+    line(x, y, x + p.x, y + p.y);
   }
 }
 
@@ -107,8 +208,11 @@ function keyPressed() {
 }
 
 function keyTyped() {
-  if (key==="d") {
-
+  if (key>="1" && key <= "9") {
+    times.setNext(key - "0");
+    recreatePhrasesForTimes(part, times.getTimes());
+    part.stop();
+    part.loop();
   }
   if (key==="h") {
   }
