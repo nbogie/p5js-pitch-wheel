@@ -1,0 +1,20 @@
+{
+  // The plugin looks for a .jshintrc file in the same directory as the source
+  // file you're prettifying (or any directory above if it doesn't exist, or in
+  // your home folder if everything else fails) and uses those options along
+  // the default ones.
+
+  // Details: https://github.com/victorporof/Sublime-JSHint#using-your-own-jshintrc-options
+  // Example: https://github.com/jshint/jshint/blob/master/examples/.jshintrc
+  // Documentation: http://www.jshint.com/docs/options/
+  "browser": true,
+  "esnext": true,
+  "quotmark": false,
+  "globals": {},
+  "predef": ["p5", "push", "pop", "fill", "map", "constrain", "noStroke", "ellipse", "rect", "line", "stroke", "strokeWeight", "text", "round", "floor", "random", "color", "createCanvas", "windowWidth", "windowHeight", "touches", "mouseX", "mouseY", "touchX", "touchY", "Firebase", "console", "textAlign", "LEFT", "CENTER", "height", "width", "noFill", "beginShape", "endShape", "vertex", "background", "millis", "keyCode", "key"],
+  "globalstrict": true,
+  "latedef": false, //set to true if you want to catch late def'd vars/fns
+  "strict": true,
+  "undef": true,
+  "unused": true
+}
