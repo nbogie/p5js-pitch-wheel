@@ -2,17 +2,18 @@
 //TODO: user control of BPM
 //TODO: trigger (schedule) drum sounds / beeps
 //TODO: trigger (optional) a bigger sound at the cycle start.
-
+//TODO: don't use p5.sound's snd.play(delay) but web audio's snd.play(when).
+//TODO: have timer hand go round in time with cycle speed.
 var colors;
 var bgColor;
 var frameNum;
 var times;
-
-var part;
-
 var sounds;
+var nextBarStartTime;
+var nextCycleTime;
+var minCycleTime;
 
-
+var paused;
 
 var colors = {
   'base03':"#042028",
@@ -54,19 +55,17 @@ function Times() {
 }
 
 function setup() {
-  sounds = [loadSound('sounds/hihat.mp3'), loadSound('sounds/snare.mp3')];
-
+  sounds = [loadSound('sounds/hihat.mp3'), loadSound('sounds/snare.mp3'), loadSound('sounds/tom.mp3')];
   frameNum = 0;
+  paused = false;
+  
   times = new Times();
   createCanvas(windowWidth, windowHeight);
   bgColor = color(100);//lets us see we've reloaded page
-  
-  part = new p5.Part();
-  part.setBPM(30);
-  recreatePhrasesForTimes(part, times.getTimes());
-  window.setTimeout(function () {
-    part.loop();    
-  }, 2000);
+  nextCycleTime = 3.0;
+  minCycleTime = 0.5;
+  nextBarStartTime = getAudioContext().currentTime + 2; //wait two secs (TODO: wait on sounds loading then go immediately)
+  window.setTimeout(schedulePlaysForTimes, 2000);
 
 }
 
@@ -78,33 +77,41 @@ function makePattern(n) {
   return res;
 }
 
-function makeSound0(){
-  makeSound(0);  
+function playSound(snd, when){
+  snd.rate(1);
+  snd.play(when);
 }
 
-function makeSound(n){
-  sounds[n].rate(1);
-  sounds[n].play();
-}
-
-function makeSound1(){
-  makeSound(1);
-}
-
-function removeAllPhrasesFromPart(p) {
-  for(var i=0 ; i < 10; i++) {
-    p.removePhrase('phrase' + i);
+function schedulePlaysForTimes() {
+  if (paused) {
+    return; //lets the schedule cycle drop.
   }
-}
+  console.log("scheduling called at " + getAudioContext().currentTime);
+  var cycleTime = nextCycleTime;  // a function of "BPM"
+  var ts = times.getTimes();
+  
+  var startTime = nextBarStartTime;
+  var barStartTime;
+  //TODO: schedule just enough bars that we'll react to changes in under two 
+  //seconds but definitely have enough scheduled for a second or two, 
+  //rather than constantly be re-registering this as a callback.
+  for (var bar = 0; bar < 2; bar++) {
+    barStartTime = startTime + (bar * cycleTime);
+    playSound(sounds[2], barStartTime - startTime);
 
-function recreatePhrasesForTimes(p, ts) {
-  removeAllPhrasesFromPart(p);
-  ts.forEach(function(n, i) {  
-    var ptn = makePattern(n);
-    console.log("ptn: " + ptn);
-    var fn = (i % 2 === 0 ) ? makeSound0 : makeSound1;
-    p.addPhrase(new p5.Phrase('phrase'+i, fn, ptn));
-  });
+    for(var k = 0; k < 2; k++){
+      for (var i = 0; i < ts[k]; ++i) {
+        var when = barStartTime + i * cycleTime / ts[k];
+        var offset = when - startTime;
+        playSound(sounds[k], offset);
+      }
+    }
+  }
+  nextBarStartTime = barStartTime + cycleTime;
+  var timeBeforeNextUnscheduledNoteMs = 1000 * (nextBarStartTime - getAudioContext().currentTime);
+  
+  //the next schedule can consider a different BPM and time sigs, even though we schedule its invokation here.
+  window.setTimeout(schedulePlaysForTimes, timeBeforeNextUnscheduledNoteMs - 400);
 }
 
 function choose(list) {
@@ -161,11 +168,11 @@ function draw() {
   ellipse(x, y, r * 2, r * 2);
   fill(colors.base2);
   ellipse(x, y, rInner * 2, rInner * 2);
-  stroke(colors.magenta);
-  strokeWeight(3);
+  stroke(colors.orange);
+  strokeWeight(8);
   drawLinesSplittingInto(times.getTimes()[0], x, y, r);
-  strokeWeight(2);
-  stroke(colors.violet);
+  strokeWeight(5);
+  stroke(colors.blue);
   drawLinesSplittingInto(times.getTimes()[1], x, y, r);
 
   //TODO: track elapsed time since last draw, and use that delta 
@@ -201,20 +208,31 @@ function drawLinesSplittingInto(n, x, y, r){
   }
 }
 
+function togglePause() {
+  paused = ! paused;
+}
 function keyPressed() {
   if (keyCode === 32) {
-    //
+    togglePause();
+  }
+}
+
+function changeCycleTime(inc) {
+  nextCycleTime += inc;
+  if (nextCycleTime <= minCycleTime){
+    nextCycleTime = minCycleTime;    
   }
 }
 
 function keyTyped() {
   if (key>="1" && key <= "9") {
     times.setNext(key - "0");
-    recreatePhrasesForTimes(part, times.getTimes());
-    part.stop();
-    part.loop();
   }
-  if (key==="h") {
+  if (key==="+" || key === "=") {
+    changeCycleTime(-0.2);
+  }
+  if (key === "-"){
+    changeCycleTime(0.2);
   }
 }
 
