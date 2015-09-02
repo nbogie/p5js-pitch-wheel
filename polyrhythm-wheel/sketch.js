@@ -12,6 +12,7 @@ var sounds;
 var nextBarStartTime;
 var nextCycleTime;
 var minCycleTime;
+var nextBarStartAndCycleTimes;
 
 var paused;
 
@@ -64,22 +65,20 @@ function setup() {
   bgColor = color(100);//lets us see we've reloaded page
   nextCycleTime = 3.0;
   minCycleTime = 0.5;
-  nextBarStartTime = getAudioContext().currentTime + 2; //wait two secs (TODO: wait on sounds loading then go immediately)
+  nextBarStartTime = getAudioContext().currentTime + 2.2; //wait two secs (TODO: wait on sounds loading then go immediately)
+  nextBarStartAndCycleTimes = [];
   window.setTimeout(schedulePlaysForTimes, 2000);
-
 }
 
-function makePattern(n) {
-  var res = [];
-  for(var i = 0; i < n; i++) {
-    res.push(1);
-  }
-  return res;
+function playSound(snd, delay){
+  //snd.rate(1);
+  snd.play(delay);
 }
 
-function playSound(snd, when){
-  snd.rate(1);
-  snd.play(when);
+function barInfoToString(i){
+  return "Start: " + i.start.toPrecision(3) + 
+         ", dur: " + i.dur.toPrecision(3) + 
+         ", end: " + i.end.toPrecision(3);
 }
 
 function schedulePlaysForTimes() {
@@ -97,13 +96,14 @@ function schedulePlaysForTimes() {
   //rather than constantly be re-registering this as a callback.
   for (var bar = 0; bar < 2; bar++) {
     barStartTime = startTime + (bar * cycleTime);
-    playSound(sounds[2], barStartTime - startTime);
-
+    nextBarStartAndCycleTimes.push({ start:barStartTime, dur:cycleTime, end: barStartTime + cycleTime });
+    playSound(sounds[2], barStartTime -getAudioContext().currentTime);
+    
     for(var k = 0; k < 2; k++){
       for (var i = 0; i < ts[k]; ++i) {
-        var when = barStartTime + i * cycleTime / ts[k];
-        var offset = when - startTime;
-        playSound(sounds[k], offset);
+        var when = barStartTime + (i * cycleTime / ts[k]);
+        var delay = when - getAudioContext().currentTime;
+        playSound(sounds[k], delay);
       }
     }
   }
@@ -152,44 +152,90 @@ function drawPalette(w, h){
   });
 }
 
-function draw() {
-  frameNum++;
-  if (frameNum >= 360) {
-    frameNum = 0;
-  }
-  background(colors.base2);
-  drawPalette(width/5, height/5);
-  var x = width/2;
-  var y = height/2;
-  var r = min(width/2, height/2);
+function centre() {
+  return {
+    x: width / 2,
+    y: height / 2
+  };
+}
+function drawCircleBases() {
+  var c = centre();
+  var r = wheelRadius();
   var rInner = r * 0.65;
-
   fill(colors.base00);
-  ellipse(x, y, r * 2, r * 2);
+  ellipse(c.x, c.y, r * 2, r * 2);
   fill(colors.base2);
-  ellipse(x, y, rInner * 2, rInner * 2);
+  ellipse(c.x, c.y, rInner * 2, rInner * 2);
+}
+function wheelRadius() {
+  return  min(width/2, height/2);
+}
+function drawLines() {
+  var c = centre();
+  var r = wheelRadius();
   stroke(colors.orange);
   strokeWeight(8);
-  drawLinesSplittingInto(times.getTimes()[0], x, y, r);
+  drawLinesSplittingInto(times.getTimes()[0], c.x, c.y, r);
   strokeWeight(5);
   stroke(colors.blue);
-  drawLinesSplittingInto(times.getTimes()[1], x, y, r);
+  drawLinesSplittingInto(times.getTimes()[1], c.x, c.y, r);
+}
 
-  //TODO: track elapsed time since last draw, and use that delta 
-  //to decide how far the timer's progressed.
-  drawTimerLine(x, y, frameNum, r);
+
+function draw() {
+  var r = wheelRadius();
+
+  background(colors.base2);
+  drawPalette(width/5, height/5);
+  var c = centre();
+  drawCircleBases();
+  drawLines();
+  drawAnimTimerLineForNow(c.x, c.y, r);
 
   fill(0);
   textAlign(CENTER);
   textSize(22);
-  text(times.getTimesAsVsString(), x + 60, y - 40);
+  text(times.getTimesAsVsString(), c.x + 60, c.y - 40);
 }
 
-function drawTimerLine(x, y, deg, r){
+function drawAnimTimerLineForNow(x, y, r) {
+  text(JSON.stringify(nextBarStartAndCycleTimes.map(barInfoToString)), 100, 320);
+  
+  if (nextBarStartAndCycleTimes.length < 1) { 
+    return;
+  }
+  var nowSec = getAudioContext().currentTime;
+  text(nowSec.toPrecision(2), 100, 350);
+  var barInfo = nextBarStartAndCycleTimes[0];
+
+  if (barInfo.start > nowSec){
+    console.log("too early to render bar");
+    return;
+  }
+  if (barInfo.end < nowSec){
+    var gone = nextBarStartAndCycleTimes.shift();
+    console.log("shifted old bar " + JSON.stringify(gone) + " at " + nowSec.toPrecision(2));
+    if (nextBarStartAndCycleTimes.length < 1) { 
+      console.log("bar info was old and there's no new one.");
+      //no new bar has been scheduled (or we've incorrectly jettisoned it)?
+      return;
+    } else {
+      barInfo = nextBarStartAndCycleTimes[0];
+    }
+  }
+  var elapsedSec = nowSec - barInfo.start;
+  var elapsedRatio = elapsedSec / barInfo.dur;
+  text(elapsedRatio.toPrecision(3), 100, 380);
+
+  drawLineToEdgePos(x, y, elapsedRatio * TWO_PI, r);
+}
+
+function drawLineToEdgePos(x, y, angle, r){
+  //console.log("drawing line from " + JSON.stringify({x:x, y: y, angle: angle, r:r}));
   strokeWeight(5);
   stroke(colors.base3);
 
-  var p = polarToCart(r, deg/360 * TWO_PI);
+  var p = polarToCart(r, angle);
   line(x, y, x+p.x, y+p.y);
 }
 
