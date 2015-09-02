@@ -210,7 +210,13 @@ function drawLinesSplittingInto(n, x, y, r){
 
 function togglePause() {
   paused = ! paused;
+  if (!paused) {
+    nextBarStartTime = getAudioContext().currentTime + 0.3;
+    schedulePlaysForTimes();
+  }
+  //TODO: stop or reset the animated timer hand
 }
+
 function keyPressed() {
   if (keyCode === 32) {
     togglePause();
