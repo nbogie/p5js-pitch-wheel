@@ -1,9 +1,10 @@
 "use strict";
-//TODO: user control of BPM
-//TODO: trigger (schedule) drum sounds / beeps
-//TODO: trigger (optional) a bigger sound at the cycle start.
+//TODO: reinstate samples, and correctly preload them
 //TODO: don't use p5.sound's snd.play(delay) but web audio's snd.play(when).
-//TODO: have timer hand go round in time with cycle speed.
+//DONE: have timer hand go round in time with cycle speed.
+//DONE: trigger (schedule) drum sounds / beeps
+//DONE: trigger (optional) a bigger sound at the cycle start.
+//DONE: user control of BPM
 var colors;
 var bgColor;
 var frameNum;
@@ -13,6 +14,7 @@ var nextBarStartTime;
 var nextCycleTime;
 var minCycleTime;
 var nextBarStartAndCycleTimes;
+var oscsAndGains;
 
 var paused;
 
@@ -56,7 +58,8 @@ function Times() {
 }
 
 function setup() {
-  sounds = [loadSound('sounds/hihat.mp3'), loadSound('sounds/snare.mp3'), loadSound('sounds/tom.mp3')];
+  //sounds = [loadSound('sounds/hihat.mp3'), loadSound('sounds/snare.mp3'), loadSound('sounds/tom.mp3')];
+  sounds = [];
   frameNum = 0;
   paused = false;
   
@@ -65,14 +68,44 @@ function setup() {
   bgColor = color(100);//lets us see we've reloaded page
   nextCycleTime = 3.0;
   minCycleTime = 0.5;
-  nextBarStartTime = getAudioContext().currentTime + 2.2; //wait two secs (TODO: wait on sounds loading then go immediately)
+  nextBarStartTime = getAudioContext().currentTime + 0.2; //wait two secs (TODO: wait on sounds loading then go immediately)
   nextBarStartAndCycleTimes = [];
-  window.setTimeout(schedulePlaysForTimes, 2000);
+  window.setTimeout(schedulePlaysForTimes, 100);
+  oscsAndGains = [];
+  createOscsAndGains();
+  console.log(JSON.stringify(oscsAndGains));
+
 }
 
-function playSound(snd, delay){
+function createOscsAndGains() {
+  for(var i = 0; i < times.getTimes().length + 1; i++) {
+    console.log("creating OSC and gain for " + times.getTimes().length);
+    var osc = getAudioContext().createOscillator();
+    osc.frequency.value = (i+1) * 220;
+    osc.type = 'square';
+    var gainNode = getAudioContext().createGain();
+    osc.connect(gainNode);
+    gainNode.connect(getAudioContext().destination);
+    gainNode.gain.value = 0;
+    osc.start(0);
+
+    var obj = {osc: osc, gain: gainNode};
+    oscsAndGains.push(obj);
+  }
+}
+
+function playBeep(i, when){
+  var dur = 0.03;
+  oscsAndGains[i].gain.gain.setValueAtTime(0.3, when);
+  oscsAndGains[i].gain.gain.setValueAtTime(0, when + dur);
+}
+
+function playSound(snd, when){
   //snd.rate(1);
+  var delay = when - getAudioContext().currentTime;
   snd.play(delay);
+
+  
 }
 
 function barInfoToString(i){
@@ -97,13 +130,14 @@ function schedulePlaysForTimes() {
   for (var bar = 0; bar < 2; bar++) {
     barStartTime = startTime + (bar * cycleTime);
     nextBarStartAndCycleTimes.push({ start:barStartTime, dur:cycleTime, end: barStartTime + cycleTime });
-    playSound(sounds[2], barStartTime -getAudioContext().currentTime);
-    
+    //playSound(sounds[2], barStartTime);
+    playBeep(2, barStartTime);
     for(var k = 0; k < 2; k++){
       for (var i = 0; i < ts[k]; ++i) {
         var when = barStartTime + (i * cycleTime / ts[k]);
-        var delay = when - getAudioContext().currentTime;
-        playSound(sounds[k], delay);
+        
+        //playSound(sounds[k], when);
+        playBeep(k, when);
       }
     }
   }
@@ -148,6 +182,7 @@ function drawPalette(w, h){
     var depth = h * 2 / palette.length;
     rect(0, y, w * 2, depth);
     fill(0);
+    noStroke();
     text(arr[0], w, y + depth/2);
   });
 }
@@ -163,6 +198,8 @@ function drawCircleBases() {
   var r = wheelRadius();
   var rInner = r * 0.65;
   fill(colors.base00);
+  strokeWeight(3);
+  stroke(0);
   ellipse(c.x, c.y, r * 2, r * 2);
   fill(colors.base2);
   ellipse(c.x, c.y, rInner * 2, rInner * 2);
@@ -174,9 +211,9 @@ function drawLines() {
   var c = centre();
   var r = wheelRadius();
   stroke(colors.orange);
-  strokeWeight(8);
+  strokeWeight(6);
   drawLinesSplittingInto(times.getTimes()[0], c.x, c.y, r);
-  strokeWeight(5);
+  strokeWeight(4);
   stroke(colors.blue);
   drawLinesSplittingInto(times.getTimes()[1], c.x, c.y, r);
 }
@@ -195,17 +232,18 @@ function draw() {
   fill(0);
   textAlign(CENTER);
   textSize(22);
+  noStroke();
   text(times.getTimesAsVsString(), c.x + 60, c.y - 40);
 }
 
 function drawAnimTimerLineForNow(x, y, r) {
-  text(JSON.stringify(nextBarStartAndCycleTimes.map(barInfoToString)), 100, 320);
+  //text(JSON.stringify(nextBarStartAndCycleTimes.map(barInfoToString)), 100, 320);
   
   if (nextBarStartAndCycleTimes.length < 1) { 
     return;
   }
   var nowSec = getAudioContext().currentTime;
-  text(nowSec.toPrecision(2), 100, 350);
+  //text(nowSec.toPrecision(2), 100, 350);
   var barInfo = nextBarStartAndCycleTimes[0];
 
   if (barInfo.start > nowSec){
@@ -214,7 +252,7 @@ function drawAnimTimerLineForNow(x, y, r) {
   }
   if (barInfo.end < nowSec){
     var gone = nextBarStartAndCycleTimes.shift();
-    console.log("shifted old bar " + JSON.stringify(gone) + " at " + nowSec.toPrecision(2));
+    //console.log("shifted old bar " + JSON.stringify(gone) + " at " + nowSec.toPrecision(2));
     if (nextBarStartAndCycleTimes.length < 1) { 
       console.log("bar info was old and there's no new one.");
       //no new bar has been scheduled (or we've incorrectly jettisoned it)?
@@ -225,7 +263,7 @@ function drawAnimTimerLineForNow(x, y, r) {
   }
   var elapsedSec = nowSec - barInfo.start;
   var elapsedRatio = elapsedSec / barInfo.dur;
-  text(elapsedRatio.toPrecision(3), 100, 380);
+  //text(elapsedRatio.toPrecision(3), 100, 380);
 
   drawLineToEdgePos(x, y, elapsedRatio * TWO_PI, r);
 }
