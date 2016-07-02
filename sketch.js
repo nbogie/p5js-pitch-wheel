@@ -788,7 +788,7 @@ var Wheel = function (spec){
     window.setTimeout(function () { 
       //TODO: careful, the osc may already have been disposed of in the future.
       osc.amp(a, 0.05); 
-    }, 5);
+      }, 5);
 
     osc.start();
     //env.play();
