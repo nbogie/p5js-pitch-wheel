@@ -774,7 +774,6 @@ var Wheel = function (spec){
   this.makeOsc = function (f, a) {
     var osc = new p5.Oscillator();
     osc.setType('sine');
-    osc.freq(f, 0.05);
     //a simple env to fade in to the given target amplitude.
     //really we just want to avoid clicking.
     //flashMessage("amp: " + a.toPrecision(2), 500);
@@ -791,6 +790,9 @@ var Wheel = function (spec){
       }, 5);
 
     osc.start();
+    //in newer Chrome versions ( (~Mar 2016) freq must be set AFTER osc is started!
+    osc.freq(f, 0.05);
+
     //env.play();
     //NOTE: you can't do this - some time must pass or the previous osc.amp(0) setting will be forgotten and a starting vol of 0.5 will cause a click.
     //osc.amp(a, 3.0, 1);
