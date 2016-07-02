@@ -771,11 +771,6 @@ var Wheel = function (spec){
     _noteOffQueue.push(nOff);
   };
 
-  this.playRandomNote = function(durMs) {
-    var ri = random(this.numDivs());
-    this.playNote(ri, durMs);
-  };
-
   this.makeOsc = function (f, a) {
     var osc = new p5.Oscillator();
     osc.setType('sine');
